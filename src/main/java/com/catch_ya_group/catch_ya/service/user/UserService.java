@@ -39,8 +39,8 @@ public class UserService {
         return authentication.isAuthenticated()? jwtService.generateToken(user.getPhoneNo()) : "fail";
     }
 
-    public boolean checkUserAlreadyExits(String username) {
-        return userRepo.existsByUsername(username);
+    public boolean checkUserAlreadyExits(String phoneNo) {
+        return userRepo.existsByPhoneNo(phoneNo);
     }
 
     public Users resetPassword(Long id, String newPassword) {
