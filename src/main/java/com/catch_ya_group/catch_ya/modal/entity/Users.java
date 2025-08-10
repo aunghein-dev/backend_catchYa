@@ -14,12 +14,8 @@ public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq")
-    private Long id;
-
+    private Long rowId;
     private String phoneNo;
     private String password;
     private String fullName;
-    private String imgUrl;
-    private String role;
-
 }

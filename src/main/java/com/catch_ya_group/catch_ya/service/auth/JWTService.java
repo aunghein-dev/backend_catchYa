@@ -21,15 +21,16 @@ public class JWTService {
     private String secretKey;
 
     public JWTService(){
-//        try {
-//            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
-//            SecretKey generatedKey = keyGen.generateKey();
-//            secretKey = Base64.getEncoder().encodeToString(generatedKey.getEncoded());
-//            System.out.println(secretKey);
-//        } catch (NoSuchAlgorithmException e) {
-//            throw new RuntimeException(e);
-//        }
-
+        /* This is new generate every time when started app
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance("HmacSHA256");
+            SecretKey generatedKey = keyGen.generateKey();
+            secretKey = Base64.getEncoder().encodeToString(generatedKey.getEncoded());
+            System.out.println(secretKey);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        */
     }
 
     public String generateToken(String username) {

@@ -53,8 +53,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-
-
     @Bean
     public AuthenticationProvider authProvider(){
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
