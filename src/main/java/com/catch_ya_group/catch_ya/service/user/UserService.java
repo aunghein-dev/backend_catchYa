@@ -1,6 +1,7 @@
 package com.catch_ya_group.catch_ya.service.user;
 
 
+import com.catch_ya_group.catch_ya.modal.dto.UserLoginDTO;
 import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
 import com.catch_ya_group.catch_ya.modal.entity.UserInfos;
 import com.catch_ya_group.catch_ya.modal.entity.Users;
@@ -45,7 +46,7 @@ public class UserService {
         return usersRepository.findAll();
     }
 
-    public String verify(Users user) {
+    public String verify(UserLoginDTO user) {
         Authentication authentication =
                 authManager.authenticate(new UsernamePasswordAuthenticationToken(
                         user.getPhoneNo(), user.getPassword()

@@ -1,5 +1,6 @@
 package com.catch_ya_group.catch_ya.controller.user;
 
+import com.catch_ya_group.catch_ya.modal.dto.UserLoginDTO;
 import com.catch_ya_group.catch_ya.modal.dto.UserRegisterDTO;
 import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
 import com.catch_ya_group.catch_ya.modal.entity.UserInfos;
@@ -49,7 +50,8 @@ public class UserController {
 
     //@CrossOrigin(origins = "https://domain.com", allowCredentials = "true")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Users user, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody UserLoginDTO user, HttpServletResponse response) {
+        System.out.println("REQUEST LOGIN" + "........" + user);
         try {
             String token = userService.verify(user);
 
