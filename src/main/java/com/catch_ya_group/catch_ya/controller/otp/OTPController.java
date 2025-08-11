@@ -1,25 +1,27 @@
 package com.catch_ya_group.catch_ya.controller.otp;
 
+import com.catch_ya_group.catch_ya.modal.entity.OtpRequest;
+import com.catch_ya_group.catch_ya.service.otp.OTPRequestService;
 import com.catch_ya_group.catch_ya.service.otp.SMSPohService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+@RequestMapping("public/otp/v1")
 @RequiredArgsConstructor
 public class OTPController {
 
     private final SMSPohService smsPohService;
+    private final OTPRequestService otpRequestService;
 
-    @PostMapping("/request-otp")
-    public ResponseEntity<?> requestOtp(@RequestParam String phoneNo) {
+    @PostMapping("/request")
+    public ResponseEntity<?> requestOtp(@RequestBody OtpRequest newRequest) {
         try {
-            smsPohService.sendOtp(phoneNo); // sends OTP & persists in DB
+            // Step: Create request in sms provider to send back otp request
+            smsPohService.sendOtp(newRequest);
             return ResponseEntity.ok(Map.of("message", "OTP sent successfully"));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -27,7 +29,7 @@ public class OTPController {
         }
     }
 
-    @PostMapping("/verify-otp")
+    @PostMapping("/verify")
     public ResponseEntity<?> verifyOtp(@RequestParam String phoneNo, @RequestParam String otpCode) {
         boolean isValid = smsPohService.verifyOtp(phoneNo, otpCode);
         if (isValid) {

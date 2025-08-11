@@ -1,8 +1,9 @@
 package com.catch_ya_group.catch_ya.controller.user;
 
+import com.catch_ya_group.catch_ya.modal.dto.UserRegisterDTO;
+import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
+import com.catch_ya_group.catch_ya.modal.entity.UserInfos;
 import com.catch_ya_group.catch_ya.modal.entity.Users;
-import com.catch_ya_group.catch_ya.repository.UserRepo;
-import com.catch_ya_group.catch_ya.service.auth.JWTService;
 import com.catch_ya_group.catch_ya.service.user.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,16 +16,22 @@ import java.util.Collections;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/public/auth/v1")
 @RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
-    private final JWTService jwtService;
-    private final UserRepo userRepo;
 
-    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> newUserRegister(@RequestPart("postingUser") Users newUser){
+    @GetMapping("/all")
+    public ResponseEntity<?> testingGetAllUsers(){
+        return ResponseEntity.ok(userService.getUsers());
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> newUserRegister(@RequestBody UserRegisterDTO dto){
+        Users newUser = dto.getNewUser();
+        UserInfos userInfos = dto.getUserInfos();
+        Leaderboard leaderboard = dto.getLeaderboard();
 
        if (userService.checkUserAlreadyExits(newUser.getPhoneNo())){
             // And for the 403 Forbidden case
@@ -35,7 +42,7 @@ public class UserController {
         }
         else {
             // Success path
-            Users registeredUser = userService.register(newUser);
+            Users registeredUser = userService.register(newUser, userInfos, leaderboard);
             return ResponseEntity.ok(registeredUser);
         }
     }
@@ -57,7 +64,10 @@ public class UserController {
 
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-            return ResponseEntity.ok(Map.of("message", "Login successful"));
+            return ResponseEntity.ok(Map.of(
+                    "message", "Login successful",
+                    "token", token
+            ));
         } catch (BadCredentialsException ex) {
             // Password incorrect or user not found
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -68,7 +78,6 @@ public class UserController {
                     .body(Map.of("message", "Something went wrong"));
         }
     }
-
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
@@ -85,4 +94,16 @@ public class UserController {
 
         return ResponseEntity.ok("Logged out successfully");
     }
+
+    @PostMapping("/check-unique")
+    public ResponseEntity<?> existsByUniqueName(@RequestBody Map<String, String> payload) {
+        String uniqueName = payload.get("uniqueName");
+        if (uniqueName == null || uniqueName.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "uniqueName is required"));
+        }
+        boolean exists = userService.existsByUniqueName(uniqueName);
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
+
+
 }

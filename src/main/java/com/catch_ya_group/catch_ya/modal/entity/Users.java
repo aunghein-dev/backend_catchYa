@@ -14,8 +14,19 @@ public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq")
-    private Long rowId;
+    private Long userId;
+
     private String phoneNo;
     private String password;
-    private String fullName;
+
+    @Column(name = "unique_name", unique = true)
+    private String uniqueName;
+
+    @ManyToOne
+    @JoinColumn(name = "user_info_id")
+    private UserInfos userInfos;
+
+    @ManyToOne
+    @JoinColumn(name = "leaderboard_id")
+    private Leaderboard leaderboard;
 }

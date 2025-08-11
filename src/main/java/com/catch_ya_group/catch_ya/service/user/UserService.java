@@ -1,8 +1,12 @@
 package com.catch_ya_group.catch_ya.service.user;
 
 
+import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
+import com.catch_ya_group.catch_ya.modal.entity.UserInfos;
 import com.catch_ya_group.catch_ya.modal.entity.Users;
-import com.catch_ya_group.catch_ya.repository.UserRepo;
+import com.catch_ya_group.catch_ya.repository.LeaderboardRepository;
+import com.catch_ya_group.catch_ya.repository.UserInfosRepository;
+import com.catch_ya_group.catch_ya.repository.UsersRepository;
 import com.catch_ya_group.catch_ya.service.auth.JWTService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,18 +21,28 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepo userRepo;
     private final JWTService jwtService;
+    private final UserInfosRepository userInfosRepo;
+    private final LeaderboardRepository leaderboardRepo;
+    private final UsersRepository usersRepository;
     AuthenticationManager authManager;
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
-    public Users register(Users user){
+    public Users register(Users user, UserInfos userInfos, Leaderboard leaderboard){
+        // Save dependent entities first
+        userInfos.setUserInfoId(null);
+        user.setUserId(null);
+        leaderboard.setLeaderboardId(null);
+        UserInfos savedUserInfos = userInfosRepo.save(userInfos);
+        Leaderboard savedLeaderboard = leaderboardRepo.save(leaderboard);
         user.setPassword(encoder.encode(user.getPassword()));
-        return userRepo.save(user);
+        user.setUserInfos(savedUserInfos);
+        user.setLeaderboard(savedLeaderboard);
+        return usersRepository.save(user);
     }
 
     public List<Users> getUsers() {
-        return userRepo.findAll();
+        return usersRepository.findAll();
     }
 
     public String verify(Users user) {
@@ -40,12 +54,17 @@ public class UserService {
     }
 
     public boolean checkUserAlreadyExits(String phoneNo) {
-        return userRepo.existsByPhoneNo(phoneNo);
+        return usersRepository.existsByPhoneNo(phoneNo);
     }
 
     public Users resetPassword(Long id, String newPassword) {
-        Users user = userRepo.findById(id).orElseThrow();
+        Users user = usersRepository.findById(id).orElseThrow();
         user.setPassword(encoder.encode(newPassword));
-        return userRepo.save(user);
+        return usersRepository.save(user);
+    }
+
+    public boolean existsByUniqueName(String uniqueName) {
+        return usersRepository.existsByUniqueName(uniqueName);
     }
 }
+

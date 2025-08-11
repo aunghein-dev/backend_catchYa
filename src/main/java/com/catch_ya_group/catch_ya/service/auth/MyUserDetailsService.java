@@ -1,8 +1,8 @@
 package com.catch_ya_group.catch_ya.service.auth;
 
 import com.catch_ya_group.catch_ya.modal.entity.Users;
-import com.catch_ya_group.catch_ya.repository.UserRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.catch_ya_group.catch_ya.repository.UsersRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class MyUserDetailsService implements UserDetailsService {
 
-    @Autowired
-    private UserRepo repo;
+    private final UsersRepository usersRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
-        Users user = repo.findByPhoneNo(username);
+        Users user = usersRepository.findByPhoneNo(username);
 
 
         return new org.springframework.security.core.userdetails.User(

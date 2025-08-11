@@ -14,10 +14,11 @@ import org.springframework.retry.annotation.EnableRetry;
 public class CatchYaApplication {
 
 	public static void main(String[] args) {
-		try {
+        try {
 			Dotenv dotenv = Dotenv.load();
 			dotenv.entries().forEach(entry -> {
 				System.setProperty(entry.getKey(), entry.getValue());
+
 			});
 		} catch (io.github.cdimascio.dotenv.DotenvException e) {
 			System.err.println("Warning: .env file not found or could not be loaded. Relying on system environment variables or application properties. Error: " + e.getMessage());
