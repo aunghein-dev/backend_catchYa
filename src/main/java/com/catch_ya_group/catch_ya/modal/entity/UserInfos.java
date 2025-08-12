@@ -14,7 +14,6 @@ public class UserInfos {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long userInfoId;
 
-    private String uniqueName;
     private String fullName;
     private String proPicsImgUrl;
     private String coverImgUrl;

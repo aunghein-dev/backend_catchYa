@@ -13,7 +13,5 @@ public class Leaderboard {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long leaderboardId;
-
-    private String uniqueName;
     private String viewedCnt;
 }

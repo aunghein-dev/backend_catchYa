@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/public/auth/v1")
+@RequestMapping("/public/v1/auth/")
 @RequiredArgsConstructor
 public class UserController {
 
