@@ -1,6 +1,6 @@
 package com.catch_ya_group.catch_ya.service.otp;
 
-import com.catch_ya_group.catch_ya.modal.OTPVerification;
+import com.catch_ya_group.catch_ya.modal.projection.OTPVerification;
 import com.catch_ya_group.catch_ya.modal.entity.OtpRequest;
 import com.catch_ya_group.catch_ya.repository.OTPRequestRepository;
 import org.springframework.stereotype.Service;

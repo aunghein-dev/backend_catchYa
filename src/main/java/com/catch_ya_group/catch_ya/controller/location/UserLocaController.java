@@ -1,35 +1,50 @@
 package com.catch_ya_group.catch_ya.controller.location;
 
 import com.catch_ya_group.catch_ya.modal.dto.LocationRequestDTO;
+import com.catch_ya_group.catch_ya.modal.dto.UserLocaDTO;
+import com.catch_ya_group.catch_ya.modal.dto.UserLocaResponseDTO;
 import com.catch_ya_group.catch_ya.modal.entity.UserLoca;
+import com.catch_ya_group.catch_ya.modal.projection.UserLocaResponseProjection;
 import com.catch_ya_group.catch_ya.service.location.UserLocaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/private/v1/location/")
+@RequestMapping("/private/v1/location")
 @RequiredArgsConstructor
 public class UserLocaController {
 
     private final UserLocaService userLocaService;
 
     @PostMapping("/save")
-    public ResponseEntity<UserLoca> saveLocation(@RequestBody LocationRequestDTO request) {
+    public ResponseEntity<UserLocaDTO> saveLocation(@RequestBody LocationRequestDTO request) {
         UserLoca saved = userLocaService.saveUserLocation(request.getUserId(), request.getLongitude(), request.getLatitude());
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(UserLocaDTO.fromEntity(saved));
     }
 
     @GetMapping("/nearby")
-    public ResponseEntity<List<UserLoca>> getNearbyUsers(
+    public ResponseEntity<List<UserLocaResponseDTO>> findNearbyUsers(
             @RequestParam double longitude,
             @RequestParam double latitude,
-            @RequestParam(defaultValue = "1000") double distanceInMeters
-    ) {
-        List<UserLoca> nearbyUsers = userLocaService.findNearbyUsers(longitude, latitude, distanceInMeters);
-        return ResponseEntity.ok(nearbyUsers);
+            @RequestParam double distanceMeters,
+            @RequestParam Long userId) {
+        List<UserLocaResponseProjection> nearby = userLocaService.findNearbyUsers(longitude, latitude, distanceMeters, userId);
+        List<UserLocaResponseDTO> dtoList = nearby.stream().map(p -> UserLocaResponseDTO.builder()
+                        .userId(p.getUserId())
+                        .longitude(p.getLongitude())
+                        .latitude(p.getLatitude())
+                        .phoneNo(p.getPhoneNo())
+                        .uniqueName(p.getUniqueName())
+                        .fullName(p.getFullName())
+                        .proPicsImgUrl(p.getProPicsImgUrl())
+                        .createdAt(p.getCreatedAt())
+                        .viewedCnt(p.getViewedCnt())
+                        .build())
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtoList);
     }
-
 }

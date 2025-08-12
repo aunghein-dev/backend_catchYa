@@ -1,6 +1,6 @@
 package com.catch_ya_group.catch_ya.modal.entity;
 
-import com.catch_ya_group.catch_ya.modal.OTPVerification;
+import com.catch_ya_group.catch_ya.modal.projection.OTPVerification;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
