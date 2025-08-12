@@ -3,6 +3,7 @@ package com.catch_ya_group.catch_ya.config;
 import com.catch_ya_group.catch_ya.config.customizer.JwtAuthenticationEntryPoint;
 import com.catch_ya_group.catch_ya.filter.JwtFilter;
 import com.catch_ya_group.catch_ya.service.auth.MyUserDetailsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,20 +23,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    private MyUserDetailsService userDetailsService;
-
-    @Autowired
-    private JwtFilter jwtFilter;
-
-    @Autowired
-    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-
-    @Autowired
-    private CorsConfigurationSource corsConfigurationSource;
-
+    private final MyUserDetailsService userDetailsService;
+    private final JwtFilter jwtFilter;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -44,9 +38,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/**",
-                                "/health",
-                                "/public/auth/v1/**"
+                                "/public/**"
                         )
                         .permitAll()
                         .anyRequest().authenticated()

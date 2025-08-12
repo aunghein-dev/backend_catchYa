@@ -51,14 +51,13 @@ public class UserController {
     //@CrossOrigin(origins = "https://domain.com", allowCredentials = "true")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginDTO user, HttpServletResponse response) {
-        System.out.println("REQUEST LOGIN" + "........" + user);
         try {
             String token = userService.verify(user);
 
             ResponseCookie cookie = ResponseCookie.from("token", token)
-                    .httpOnly(true)
-                    .secure(true)
-                    .sameSite("None") // REQUIRED for cross-domain cookies
+                    .httpOnly(false)
+                    .secure(false)
+                    .sameSite("Lax") // REQUIRED for cross-domain cookies
                     .path("/")
                     //.domain("domain.com") // MUST be the root domain
                     .maxAge(Duration.ofHours(99999))
@@ -76,6 +75,7 @@ public class UserController {
                     .body(Map.of("message", "Incorrect username or password"));
         } catch (Exception ex) {
             // General fallback
+            ex.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Something went wrong"));
         }
@@ -98,7 +98,7 @@ public class UserController {
     }
 
     @PostMapping("/check-unique")
-    public ResponseEntity<?> existsByUniqueName(@RequestBody Map<String, String> payload) {
+        public ResponseEntity<?> existsByUniqueName(@RequestBody Map<String, String> payload) {
         String uniqueName = payload.get("uniqueName");
         if (uniqueName == null || uniqueName.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "uniqueName is required"));

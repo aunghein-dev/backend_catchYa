@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // Proceed if token was found
         if (token != null) {
-            username = jwtService.extractUsername(token);
+            username = jwtService.extractphoneNo(token);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = context.getBean(MyUserDetailsService.class).loadUserByUsername(username);

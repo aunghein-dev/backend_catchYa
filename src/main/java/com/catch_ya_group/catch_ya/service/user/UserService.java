@@ -26,7 +26,7 @@ public class UserService {
     private final UserInfosRepository userInfosRepo;
     private final LeaderboardRepository leaderboardRepo;
     private final UsersRepository usersRepository;
-    AuthenticationManager authManager;
+    private final AuthenticationManager authManager;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
 
     public Users register(Users user, UserInfos userInfos, Leaderboard leaderboard){
