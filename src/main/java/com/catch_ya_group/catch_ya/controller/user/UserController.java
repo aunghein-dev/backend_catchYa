@@ -6,6 +6,7 @@ import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
 import com.catch_ya_group.catch_ya.modal.entity.UserInfos;
 import com.catch_ya_group.catch_ya.modal.entity.Users;
 import com.catch_ya_group.catch_ya.service.user.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -19,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/public/v1/auth/")
 @RequiredArgsConstructor
+@Tag(name = "User & Authentication", description = "AIPs which can be provided by user login, logout, register")
 public class UserController {
 
     private final UserService userService;

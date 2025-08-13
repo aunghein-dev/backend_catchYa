@@ -3,6 +3,7 @@ package com.catch_ya_group.catch_ya.controller.otp;
 import com.catch_ya_group.catch_ya.modal.entity.OtpRequest;
 import com.catch_ya_group.catch_ya.service.otp.OTPRequestService;
 import com.catch_ya_group.catch_ya.service.otp.SMSPohService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("public/otp/v1")
 @RequiredArgsConstructor
+@Tag(name = "OTP Service", description = "SMS POH local OTP service API")
 public class OTPController {
 
     private final SMSPohService smsPohService;

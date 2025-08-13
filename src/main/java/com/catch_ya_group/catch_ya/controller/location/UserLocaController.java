@@ -6,6 +6,7 @@ import com.catch_ya_group.catch_ya.modal.dto.UserLocaResponseDTO;
 import com.catch_ya_group.catch_ya.modal.entity.UserLoca;
 import com.catch_ya_group.catch_ya.modal.projection.UserLocaResponseProjection;
 import com.catch_ya_group.catch_ya.service.location.UserLocaService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/private/v1/location")
 @RequiredArgsConstructor
+@Tag(name = "Location", description = "API can extract data which are users locations.")
 public class UserLocaController {
 
     private final UserLocaService userLocaService;

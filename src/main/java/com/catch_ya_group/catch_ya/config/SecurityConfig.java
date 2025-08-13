@@ -4,7 +4,6 @@ import com.catch_ya_group.catch_ya.config.customizer.JwtAuthenticationEntryPoint
 import com.catch_ya_group.catch_ya.filter.JwtFilter;
 import com.catch_ya_group.catch_ya.service.auth.MyUserDetailsService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,7 +37,17 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/public/**"
+                                "/public/**",
+                                "/v2/api-docs",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-resources",
+                                "/swagger-resources/**",
+                                "/configuration/ui",
+                                "/configuration/security",
+                                "/swagger-ui/**",
+                                "/webjars/**",
+                                "/swagger-ui.html"
                         )
                         .permitAll()
                         .anyRequest().authenticated()
