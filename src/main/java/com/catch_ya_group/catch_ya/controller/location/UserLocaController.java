@@ -49,4 +49,10 @@ public class UserLocaController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtoList);
     }
+
+
+    @GetMapping("/{currentUserId}")
+    public ResponseEntity<?> getCurrentUserLoca(@PathVariable Long currentUserId){
+        return ResponseEntity.ok(userLocaService.getCurrentUserLoca(currentUserId));
+    }
 }

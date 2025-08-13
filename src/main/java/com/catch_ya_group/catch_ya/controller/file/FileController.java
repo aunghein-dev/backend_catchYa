@@ -1,6 +1,7 @@
 package com.catch_ya_group.catch_ya.controller.file;
 
 import com.catch_ya_group.catch_ya.service.file.MinioService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/public/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Files", description = "API can extract data which are users related data files.")
 public class FileController {
 
     private final MinioService minioService;

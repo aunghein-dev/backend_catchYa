@@ -53,4 +53,8 @@ public class UserLocaService {
             throw new IllegalArgumentException("Invalid longitude: must be between -180 and 180");
         }
     }
+
+    public UserLocaResponseProjection getCurrentUserLoca(Long currentUserId) {
+        return userLocaRepository.getCurrentUserLoca(currentUserId);
+    }
 }
