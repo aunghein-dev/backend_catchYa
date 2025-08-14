@@ -11,9 +11,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("public/otp/v1")
+@RequestMapping("public/v1/otp")
 @RequiredArgsConstructor
-@Tag(name = "OTP Service", description = "SMS POH local OTP service API")
+@Tag(
+        name = "OTP Service",
+        description = "Endpoints for generating, sending, and verifying one-time passwords (OTPs) for secure user authentication."
+)
 public class OTPController {
 
     private final SMSPohService smsPohService;

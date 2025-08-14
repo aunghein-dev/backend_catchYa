@@ -6,6 +6,7 @@ import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
 import com.catch_ya_group.catch_ya.modal.entity.UserInfos;
 import com.catch_ya_group.catch_ya.modal.entity.Users;
 import com.catch_ya_group.catch_ya.service.user.UserService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +21,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/public/v1/auth/")
 @RequiredArgsConstructor
-@Tag(name = "User & Authentication", description = "AIPs which can be provided by user login, logout, register")
+@Tag(
+        name = "User & Authentication",
+        description = "Endpoints for user management and authentication, including registration, login, logout, and profile management."
+)
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping("/all")
+    @Hidden
     public ResponseEntity<?> testingGetAllUsers(){
         return ResponseEntity.ok(userService.getUsers());
     }
@@ -55,6 +60,7 @@ public class UserController {
     public ResponseEntity<?> login(@RequestBody UserLoginDTO user, HttpServletResponse response) {
         try {
             String token = userService.verify(user);
+            Long userId = userService.findUserIdByPhoneNo(user.getPhoneNo());
 
             ResponseCookie cookie = ResponseCookie.from("token", token)
                     .httpOnly(false)
@@ -69,7 +75,8 @@ public class UserController {
 
             return ResponseEntity.ok(Map.of(
                     "message", "Login successful",
-                    "token", token
+                    "token", token,
+                    "userId", userId
             ));
         } catch (BadCredentialsException ex) {
             // Password incorrect or user not found

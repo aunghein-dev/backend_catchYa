@@ -9,15 +9,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/public/v1/auth")
+@RequestMapping("/private/v1/file")
 @RequiredArgsConstructor
-@Tag(name = "Files", description = "API can extract data which are users related data files.")
+@Tag(
+        name = "Files",
+        description = "Endpoints for managing and retrieving user-related files, including uploads, downloads, and metadata."
+)
 public class FileController {
 
     private final MinioService minioService;
 
 
-    @PostMapping("/file")
+    @PostMapping("/")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             String objectName = System.currentTimeMillis() + "-" + file.getOriginalFilename();

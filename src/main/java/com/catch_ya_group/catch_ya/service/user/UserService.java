@@ -67,5 +67,9 @@ public class UserService {
     public boolean existsByUniqueName(String uniqueName) {
         return usersRepository.existsByUniqueName(uniqueName);
     }
+
+    public Long findUserIdByPhoneNo(String phoneNo) {
+        return usersRepository.findUserIdByPhoneNo(phoneNo);
+    }
 }
 

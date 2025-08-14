@@ -8,6 +8,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -55,6 +56,10 @@ public class UserLocaService {
     }
 
     public UserLocaResponseProjection getCurrentUserLoca(Long currentUserId) {
-        return userLocaRepository.getCurrentUserLoca(currentUserId);
+        if(userLocaRepository.findAll().contains(userLocaRepository.findByUserId(currentUserId))){
+            return userLocaRepository.getCurrentUserLoca(currentUserId);
+        } else {
+            throw new UsernameNotFoundException("Current User ID Not Found In Database.");
+        }
     }
 }

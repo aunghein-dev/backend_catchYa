@@ -17,7 +17,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/private/v1/location")
 @RequiredArgsConstructor
-@Tag(name = "Location", description = "API can extract data which are users locations.")
+@Tag(
+        name = "Location",
+        description = "Endpoints for accessing and updating user location data, including geospatial queries and tracking."
+)
 public class UserLocaController {
 
     private final UserLocaService userLocaService;
@@ -53,6 +56,7 @@ public class UserLocaController {
 
     @GetMapping("/{currentUserId}")
     public ResponseEntity<?> getCurrentUserLoca(@PathVariable Long currentUserId){
+        System.out.println("Searching for userID: " + currentUserId);
         return ResponseEntity.ok(userLocaService.getCurrentUserLoca(currentUserId));
     }
 }

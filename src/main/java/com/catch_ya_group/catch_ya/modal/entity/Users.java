@@ -1,6 +1,7 @@
 package com.catch_ya_group.catch_ya.modal.entity;
 
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +14,16 @@ import lombok.NoArgsConstructor;
 public class Users {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "users_seq")
+    @SequenceGenerator(
+            name = "users_seq",
+            sequenceName = "users_seq",
+            allocationSize = 1
+    )
+    @GeneratedValue(
+            strategy = GenerationType.SEQUENCE,
+            generator = "users_seq"
+    )
+    @Hidden
     private Long userId;
 
     private String phoneNo;
