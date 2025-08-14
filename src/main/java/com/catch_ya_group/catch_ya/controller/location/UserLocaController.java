@@ -27,7 +27,7 @@ public class UserLocaController {
 
     @PostMapping("/save")
     public ResponseEntity<UserLocaDTO> saveLocation(@RequestBody LocationRequestDTO request) {
-        UserLoca saved = userLocaService.saveUserLocation(request.getUserId(), request.getLongitude(), request.getLatitude());
+        UserLoca saved = userLocaService.saveUserLocation(request.userId(), request.longitude(), request.latitude());
         return ResponseEntity.ok(UserLocaDTO.fromEntity(saved));
     }
 

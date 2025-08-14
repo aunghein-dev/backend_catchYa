@@ -1,5 +1,7 @@
 package com.catch_ya_group.catch_ya.controller.user;
 
+import com.catch_ya_group.catch_ya.modal.dto.PasswordChangeRequest;
+import com.catch_ya_group.catch_ya.modal.dto.UniqueNameRequest;
 import com.catch_ya_group.catch_ya.modal.dto.UserLoginDTO;
 import com.catch_ya_group.catch_ya.modal.dto.UserRegisterDTO;
 import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
@@ -12,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -107,8 +110,8 @@ public class UserController {
     }
 
     @PostMapping("/check-unique")
-        public ResponseEntity<?> existsByUniqueName(@RequestBody Map<String, String> payload) {
-        String uniqueName = payload.get("uniqueName");
+    public ResponseEntity<?> existsByUniqueName(@RequestBody UniqueNameRequest request) {
+        String uniqueName = request.uniqueName();
         if (uniqueName == null || uniqueName.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "uniqueName is required"));
         }
@@ -116,5 +119,13 @@ public class UserController {
         return ResponseEntity.ok(Map.of("exists", exists));
     }
 
-
+    @PutMapping("/change-pass")
+    public ResponseEntity<?> changePassword(@RequestBody PasswordChangeRequest request){
+        if(userService.checkPasswordCorrect(request.userId(), request.oldPassword())){
+            return ResponseEntity.ok(userService.changePassword(request.userId(), request.newPassword()));
+        }
+        else {
+            return new ResponseEntity<>("Old password is incorrect.", HttpStatus.BAD_REQUEST);
+        }
+    }
 }

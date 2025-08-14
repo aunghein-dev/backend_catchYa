@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +28,7 @@ public class UserService {
     private final LeaderboardRepository leaderboardRepo;
     private final UsersRepository usersRepository;
     private final AuthenticationManager authManager;
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
+    private final BCryptPasswordEncoder encoder;
 
     public Users register(Users user, UserInfos userInfos, Leaderboard leaderboard){
         // Save dependent entities first
@@ -71,5 +72,18 @@ public class UserService {
     public Long findUserIdByPhoneNo(String phoneNo) {
         return usersRepository.findUserIdByPhoneNo(phoneNo);
     }
+
+    public boolean checkPasswordCorrect(Long userId, String oldPassword) {
+        Users user = usersRepository.findById(userId).orElseThrow();
+        return encoder.matches(oldPassword, user.getPassword());
+    }
+
+    public Users changePassword(Long userId, String newPassword) {
+        Users user = usersRepository.findById(userId).orElseThrow();
+        user.setPassword(encoder.encode(newPassword));
+        usersRepository.save(user);
+        return user;
+    }
+
 }
 
