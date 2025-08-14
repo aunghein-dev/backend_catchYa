@@ -55,7 +55,7 @@ public class UserController {
         }
     }
 
-    //@CrossOrigin(origins = "https://domain.com", allowCredentials = "true")
+    //@CrossOrigin(origins = "https://catchya.online", allowCredentials = "true")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginDTO user, HttpServletResponse response) {
         try {
@@ -63,11 +63,11 @@ public class UserController {
             Long userId = userService.findUserIdByPhoneNo(user.getPhoneNo());
 
             ResponseCookie cookie = ResponseCookie.from("token", token)
-                    .httpOnly(false)
-                    .secure(false)
-                    .sameSite("Lax") // REQUIRED for cross-domain cookies
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None") // REQUIRED for cross-domain cookies
                     .path("/")
-                    //.domain("domain.com") // MUST be the root domain
+                    .domain("catchya.online") // MUST be the root domain
                     .maxAge(Duration.ofHours(99999))
                     .build();
 
@@ -97,7 +97,7 @@ public class UserController {
                 .secure(true) // Match the original
                 .sameSite("None") // Match the original
                 .path("/") // Match the original
-                //.domain("domain.com") // Match the original
+                .domain("catchya.online") // Match the original
                 .maxAge(0) // Expire immediately
                 .build();
 
