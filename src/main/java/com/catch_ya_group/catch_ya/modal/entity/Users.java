@@ -34,9 +34,11 @@ public class Users {
 
     @ManyToOne
     @JoinColumn(name = "user_info_id")
+    @Hidden
     private UserInfos userInfos;
 
     @ManyToOne
     @JoinColumn(name = "leaderboard_id")
+    @Hidden
     private Leaderboard leaderboard;
 }
