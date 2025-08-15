@@ -20,8 +20,13 @@ public class LeaderboardController {
         return ResponseEntity.ok(leaderboardHistoryService.viewProfileAction(fromUserId,toUserId));
     }
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<?> getViewersOfUser(@PathVariable Long userId){
+    @GetMapping("/viewers")
+    public ResponseEntity<?> getViewersOfUser(@RequestParam Long userId){
         return ResponseEntity.ok(leaderboardHistoryService.getViewersOfUser(userId));
+    }
+
+    @GetMapping("/board")
+    public ResponseEntity<?> getWholeBoard(){
+        return ResponseEntity.ok(leaderboardHistoryService.getWholeBoard());
     }
 }

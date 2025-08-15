@@ -1,9 +1,8 @@
 package com.catch_ya_group.catch_ya.service.leaderboard;
 
-import com.catch_ya_group.catch_ya.modal.dto.ViewersDTO;
+import com.catch_ya_group.catch_ya.modal.dto.BoardResponse;
 import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
 import com.catch_ya_group.catch_ya.modal.entity.LeaderboardHistory;
-import com.catch_ya_group.catch_ya.modal.entity.Users;
 import com.catch_ya_group.catch_ya.modal.projection.UserLocaResponseProjection;
 import com.catch_ya_group.catch_ya.repository.LeaderboardHistoryRepository;
 import com.catch_ya_group.catch_ya.repository.LeaderboardRepository;
@@ -67,5 +66,9 @@ public class LeaderboardHistoryService {
 
     public List<Long> getViewersIdsOfUser(Long userId){
         return leaderboardHistoryRepository.getViewersIdsOfUser(userId);
+    }
+
+    public List<BoardResponse> getWholeBoard() {
+        return leaderboardHistoryRepository.getWholeBoard();
     }
 }

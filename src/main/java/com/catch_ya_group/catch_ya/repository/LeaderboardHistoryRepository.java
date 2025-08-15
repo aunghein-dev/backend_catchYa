@@ -1,5 +1,6 @@
 package com.catch_ya_group.catch_ya.repository;
 
+import com.catch_ya_group.catch_ya.modal.dto.BoardResponse;
 import com.catch_ya_group.catch_ya.modal.entity.LeaderboardHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -37,5 +38,22 @@ public interface LeaderboardHistoryRepository extends JpaRepository<LeaderboardH
           WHERE to_user_id = :userId
           """, nativeQuery = true)
     List<Long> getViewersIdsOfUser(@Param("userId") Long userId);
+
+    @Query(value = """
+        select ROW_NUMBER() OVER (ORDER BY l.viewed_cnt desc) as rank,
+               l.viewed_cnt,
+               u.user_id,
+               u.phone_no,
+               u.unique_name,
+               i.full_name,
+               i.cover_img_url,
+               i.pro_pics_img_url
+        from\s
+        leaderboard l
+        left join users u on u.leaderboard_id = l.leaderboard_id
+        left join user_infos i on i.user_info_id = u.user_info_id
+        order by viewed_cnt desc
+        """, nativeQuery = true)
+    List<BoardResponse> getWholeBoard();
 }
 
