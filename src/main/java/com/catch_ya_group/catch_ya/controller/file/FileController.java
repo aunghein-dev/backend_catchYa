@@ -1,6 +1,9 @@
 package com.catch_ya_group.catch_ya.controller.file;
 
 import com.catch_ya_group.catch_ya.service.file.MinioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +23,14 @@ public class FileController {
     private final MinioService minioService;
 
 
+    @Operation(
+            summary = "Upload a file",
+            description = "Uploads a file to the storage service. The uploaded file will have a unique timestamp-prefixed name."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
+            @ApiResponse(responseCode = "500", description = "File upload failed")
+    })
     @PostMapping("/")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
@@ -32,6 +43,15 @@ public class FileController {
         }
     }
 
+    @Operation(
+            summary = "Delete a file",
+            description = "Deletes a file by its object name from the storage service."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "File deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "File not found"),
+            @ApiResponse(responseCode = "500", description = "File delete failed")
+    })
     @DeleteMapping("/{objectName}")
     public ResponseEntity<String> deleteFile(@PathVariable String objectName) {
         try {

@@ -3,6 +3,9 @@ package com.catch_ya_group.catch_ya.controller.otp;
 import com.catch_ya_group.catch_ya.modal.entity.OtpRequest;
 import com.catch_ya_group.catch_ya.service.otp.OTPRequestService;
 import com.catch_ya_group.catch_ya.service.otp.SMSPohService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,11 @@ public class OTPController {
     private final SMSPohService smsPohService;
     private final OTPRequestService otpRequestService;
 
+    @Operation(summary = "Request OTP", description = "Sends a one-time password (OTP) to the specified phone number.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully"),
+            @ApiResponse(responseCode = "500", description = "Failed to send OTP")
+    })
     @PostMapping("/request")
     public ResponseEntity<?> requestOtp(@RequestBody OtpRequest newRequest) {
         try {
@@ -34,6 +42,11 @@ public class OTPController {
         }
     }
 
+    @Operation(summary = "Verify OTP", description = "Verifies the provided OTP code for the given phone number.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "OTP verified successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired OTP")
+    })
     @PostMapping("/verify")
     public ResponseEntity<?> verifyOtp(@RequestParam String phoneNo, @RequestParam String otpCode) {
         boolean isValid = smsPohService.verifyOtp(phoneNo, otpCode);
