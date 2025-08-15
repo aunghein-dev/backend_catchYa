@@ -18,7 +18,7 @@ public class CorsConfig {
 
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://catchya.online",
-                "http://localhost:*"
+                "http://localhost:8080"
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
