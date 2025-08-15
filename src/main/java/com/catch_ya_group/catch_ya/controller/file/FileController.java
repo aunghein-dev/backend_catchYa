@@ -22,7 +22,6 @@ public class FileController {
 
     private final MinioService minioService;
 
-
     @Operation(
             summary = "Upload a file",
             description = "Uploads a file to the storage service. The uploaded file will have a unique timestamp-prefixed name."
@@ -32,7 +31,7 @@ public class FileController {
             @ApiResponse(responseCode = "500", description = "File upload failed")
     })
     @PostMapping("/")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadFile(@RequestPart("file") MultipartFile file) {
         try {
             String objectName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
             String result = minioService.uploadFile(file, objectName);

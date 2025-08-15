@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Notification Client</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Stomp.js library for WebSocket communication -->
+    <!-- Note: We are using a native WebSocket now, so SockJS is no longer needed -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .message-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+
+    <!-- Header -->
+    <div class="bg-blue-600 text-white p-6 rounded-t-2xl">
+        <h1 class="text-3xl font-bold text-center">Notification Client</h1>
+        <p class="text-center text-blue-200 mt-2">Connect to your Spring Boot WebSocket to receive notifications.</p>
+    </div>
+
+    <!-- Connection Control -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
+            <input type="text" id="userIdInput" placeholder="Enter User ID (e.g., 1)"
+                   class="flex-1 p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+            <button id="connectBtn" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md">
+                Connect
+            </button>
+            <button id="disconnectBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-md hidden">
+                Disconnect
+            </button>
+        </div>
+        <div id="status" class="mt-4 text-center font-medium">
+            <span class="text-red-500">Status: Disconnected</span>
+        </div>
+    </div>
+
+    <!-- Notification Feed -->
+    <div class="p-6">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-center">Notifications</h2>
+        <div id="notificationFeed" class="max-h-80 overflow-y-auto space-y-4">
+            <p id="noNotifications" class="text-center text-gray-500 italic">No new notifications yet.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // The URL for your WebSocket endpoint
+    // Use 'ws://' for WebSocket connections
+    const WEBSOCKET_URL = 'ws://localhost:8080/ws';
+
+    let stompClient = null;
+    let userId = '';
+
+    const userIdInput = document.getElementById('userIdInput');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const statusSpan = document.querySelector('#status span');
+    const notificationFeed = document.getElementById('notificationFeed');
+    const noNotifications = document.getElementById('noNotifications');
+
+    // Function to update the UI based on connection status
+    function updateUI(isConnected) {
+        userIdInput.disabled = isConnected;
+        connectBtn.classList.toggle('hidden', isConnected);
+        disconnectBtn.classList.toggle('hidden', !isConnected);
+        statusSpan.textContent = isConnected ? 'Status: Connected' : 'Status: Disconnected';
+        statusSpan.className = isConnected ? 'text-green-500' : 'text-red-500';
+    }
+
+    // Function to display a new notification
+    function showNotification(notification) {
+        // Hide the "No notifications" message if it's visible
+        noNotifications.classList.add('hidden');
+
+        const notiElement = document.createElement('div');
+        notiElement.className = 'flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl shadow-sm message-fade-in transition-transform duration-200 hover:scale-105';
+
+        notiElement.innerHTML = `
+            <img src="${notification.lastContentMakerUrl || 'https://placehold.co/40x40/E5E7EB/1F2937?text=U'}" alt="User Profile" class="w-10 h-10 rounded-full object-cover flex-shrink-0">
+            <div class="flex-1">
+                <p class="font-medium text-gray-900 dark:text-white">${notification.lastContentMessage}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${new Date(notification.notiDateTime).toLocaleString()}</p>
+            </div>
+        `;
+        notificationFeed.prepend(notiElement);
+    }
+
+    // Connection logic
+    connectBtn.addEventListener('click', () => {
+        userId = userIdInput.value.trim();
+        if (!userId) {
+            alert("Please enter a user ID.");
+            return;
+        }
+
+        // Use a native WebSocket connection
+        const socket = new WebSocket(WEBSOCKET_URL);
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, (frame) => {
+            console.log('Connected: ' + frame);
+            updateUI(true);
+
+            // Subscribe to the user's private notification queue
+            stompClient.subscribe(`/user/${userId}/queue/notifications`, (message) => {
+                const notification = JSON.parse(message.body);
+                console.log("Received new notification: ", notification);
+                showNotification(notification);
+            });
+
+        }, (error) => {
+            console.error('Connection error: ' + error);
+            updateUI(false);
+            alert("Connection failed. Check console for details.");
+        });
+    });
+
+    // Disconnection logic
+    disconnectBtn.addEventListener('click', () => {
+        if (stompClient !== null) {
+            stompClient.disconnect(() => {
+                console.log("Disconnected");
+                updateUI(false);
+            });
+        }
+    });
+</script>
+</body>
+</html>
