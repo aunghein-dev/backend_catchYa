@@ -30,7 +30,7 @@ public class FileController {
             @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
             @ApiResponse(responseCode = "500", description = "File upload failed")
     })
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<String> uploadFile(@RequestPart("file") MultipartFile file) {
         try {
             String objectName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
