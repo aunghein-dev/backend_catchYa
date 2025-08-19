@@ -29,10 +29,6 @@ public class UserLocaController {
     private final UserLocaService userLocaService;
 
     @Operation(summary = "Save user location", description = "Saves or updates the location of a user in the system.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Location saved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data")
-    })
     @PostMapping("/save")
     public ResponseEntity<UserLocaDTO> saveLocation(@RequestBody LocationRequestDTO request) {
         UserLoca saved = userLocaService.saveUserLocation(request.userId(), request.longitude(), request.latitude());
@@ -40,10 +36,6 @@ public class UserLocaController {
     }
 
     @Operation(summary = "Find nearby users", description = "Returns a list of users located within a certain distance from the given coordinates.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Nearby users retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid coordinates or distance")
-    })
     @GetMapping("/nearby")
     public ResponseEntity<List<UserLocaResponseDTO>> findNearbyUsers(
             @RequestParam double longitude,
@@ -68,10 +60,6 @@ public class UserLocaController {
 
 
     @Operation(summary = "Get current user location", description = "Retrieves the location information of a specific user by their ID.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User location retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "User not found")
-    })
     @GetMapping("/{currentUserId}")
     public ResponseEntity<?> getCurrentUserLoca(@PathVariable Long currentUserId){
         System.out.println("Searching for userID: " + currentUserId);

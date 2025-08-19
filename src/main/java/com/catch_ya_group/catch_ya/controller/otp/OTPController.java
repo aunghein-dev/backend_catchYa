@@ -43,10 +43,6 @@ public class OTPController {
     }
 
     @Operation(summary = "Verify OTP", description = "Verifies the provided OTP code for the given phone number.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP verified successfully"),
-            @ApiResponse(responseCode = "401", description = "Invalid or expired OTP")
-    })
     @PostMapping("/verify")
     public ResponseEntity<?> verifyOtp(@RequestParam String phoneNo, @RequestParam String otpCode) {
         boolean isValid = smsPohService.verifyOtp(phoneNo, otpCode);

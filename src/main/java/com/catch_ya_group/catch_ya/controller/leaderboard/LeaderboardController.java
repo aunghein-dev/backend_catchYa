@@ -18,10 +18,6 @@ public class LeaderboardController {
     private final LeaderboardHistoryService leaderboardHistoryService;
 
     @Operation(summary = "Record profile view", description = "Tracks when a user views another user's profile and updates leaderboard counts.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "View recorded successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid user IDs")
-    })
     @PostMapping("/view")
     public ResponseEntity<?> viewProfileAction(@RequestParam Long fromUserId, @RequestParam Long toUserId){
         System.out.println(fromUserId + "-" +toUserId);
@@ -29,19 +25,12 @@ public class LeaderboardController {
     }
 
     @Operation(summary = "Get viewers of a user", description = "Returns a list of users who have viewed the specified user's profile.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of viewers retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid user ID")
-    })
     @GetMapping("/viewers")
     public ResponseEntity<?> getViewersOfUser(@RequestParam Long userId){
         return ResponseEntity.ok(leaderboardHistoryService.getViewersOfUser(userId));
     }
 
     @Operation(summary = "Get full leaderboard", description = "Returns the complete leaderboard with all users and their view counts.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Leaderboard retrieved successfully")
-    })
     @GetMapping("/board")
     public ResponseEntity<?> getWholeBoard(){
         return ResponseEntity.ok(leaderboardHistoryService.getWholeBoard());

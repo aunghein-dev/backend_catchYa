@@ -26,10 +26,6 @@ public class FileController {
             summary = "Upload a file",
             description = "Uploads a file to the storage service. The uploaded file will have a unique timestamp-prefixed name."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "File uploaded successfully"),
-            @ApiResponse(responseCode = "500", description = "File upload failed")
-    })
     @PostMapping
     public ResponseEntity<String> uploadFile(@RequestPart("file") MultipartFile file) {
         try {
@@ -46,11 +42,6 @@ public class FileController {
             summary = "Delete a file",
             description = "Deletes a file by its object name from the storage service."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "File deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "File not found"),
-            @ApiResponse(responseCode = "500", description = "File delete failed")
-    })
     @DeleteMapping("/{objectName}")
     public ResponseEntity<String> deleteFile(@PathVariable String objectName) {
         try {

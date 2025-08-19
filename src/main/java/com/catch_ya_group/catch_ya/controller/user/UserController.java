@@ -42,10 +42,6 @@ public class UserController {
     }
 
     @Operation(summary = "Register new user", description = "Registers a new user along with their profile and leaderboard data. Checks if the phone number already exists.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User registered successfully"),
-            @ApiResponse(responseCode = "403", description = "Phone number is already taken")
-    })
     @PostMapping("/register")
     public ResponseEntity<?> newUserRegister(@RequestBody UserRegisterDTO dto){
         Users newUser = dto.getNewUser();
@@ -67,11 +63,6 @@ public class UserController {
     }
 
     @Operation(summary = "Login user", description = "Authenticates a user and returns a JWT token along with a secure HTTP-only cookie.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful"),
-            @ApiResponse(responseCode = "401", description = "Incorrect username or password"),
-            @ApiResponse(responseCode = "500", description = "Server error")
-    })
     //@CrossOrigin(origins = "https://catchya.online", allowCredentials = "true")
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody UserLoginDTO user, HttpServletResponse response) {
@@ -108,9 +99,6 @@ public class UserController {
     }
 
     @Operation(summary = "Logout user", description = "Logs out the user by clearing the authentication cookie.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Logged out successfully")
-    })
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from("token", "")
@@ -128,10 +116,6 @@ public class UserController {
     }
 
     @Operation(summary = "Check unique username", description = "Checks if a unique username is already taken.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Returns whether the username exists"),
-            @ApiResponse(responseCode = "400", description = "uniqueName is required")
-    })
     @PostMapping("/check-unique")
     public ResponseEntity<?> existsByUniqueName(@RequestBody UniqueNameRequest request) {
         String uniqueName = request.uniqueName();
@@ -143,10 +127,6 @@ public class UserController {
     }
 
     @Operation(summary = "Change password", description = "Allows a user to change their password if the old password is correct.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
-            @ApiResponse(responseCode = "400", description = "Old password is incorrect")
-    })
     @PutMapping("/change-pass")
     public ResponseEntity<?> changePassword(@RequestBody PasswordChangeRequest request){
         if(userService.checkPasswordCorrect(request.userId(), request.oldPassword())){

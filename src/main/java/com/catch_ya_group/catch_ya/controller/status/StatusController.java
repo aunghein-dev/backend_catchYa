@@ -25,75 +25,48 @@ public class StatusController {
     private final StatusService statusService;
 
     @Operation(summary = "Get all statuses", description = "Retrieve all statuses from the system")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "List of statuses retrieved successfully")
-    })
     @GetMapping("/all")
     public ResponseEntity<List<Status>> getAll() {
         return ResponseEntity.ok(statusService.getAll());
     }
 
     @Operation(summary = "Get status by ID", description = "Retrieve a single status by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Status found"),
-            @ApiResponse(responseCode = "404", description = "Status not found")
-    })
     @GetMapping("/{id}")
     public ResponseEntity<Status> getById(@PathVariable Long id) {
         return ResponseEntity.ok(statusService.getById(id));
     }
 
     @Operation(summary = "Get statuses by user ID", description = "Retrieve all statuses created by a specific user")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Statuses retrieved successfully")
-    })
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Status>> getByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(statusService.getByUserId(userId));
     }
 
     @Operation(summary = "Search statuses by content", description = "Search for statuses containing specific content keywords")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Statuses retrieved successfully")
-    })
     @GetMapping("/search/content")
     public ResponseEntity<List<Status>> searchByContent(@RequestParam String keyword) {
         return ResponseEntity.ok(statusService.searchByContent(keyword));
     }
 
     @Operation(summary = "Search statuses by keyword", description = "Search for statuses by hashKeywords")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Statuses retrieved successfully")
-    })
     @GetMapping("/search/keyword")
     public ResponseEntity<List<Status>> searchByKeyword(@RequestParam String keyword) {
         return ResponseEntity.ok(statusService.searchByKeyword(keyword));
     }
 
     @Operation(summary = "Create new status", description = "Create a new status with content, keywords, and images")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Status created successfully")
-    })
     @PostMapping
     public ResponseEntity<Status> create(@RequestBody Status status) {
         return new ResponseEntity<>(statusService.create(status), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Update status", description = "Update an existing status by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Status updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Status not found")
-    })
     @PutMapping("/{id}")
     public ResponseEntity<Status> update(@PathVariable Long id, @RequestBody Status status) {
         return ResponseEntity.ok(statusService.update(id, status));
     }
 
     @Operation(summary = "Delete status", description = "Delete a status by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Status deleted successfully"),
-            @ApiResponse(responseCode = "404", description = "Status not found")
-    })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         statusService.delete(id);
