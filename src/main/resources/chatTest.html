@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>User ↔ User Chat (STOMP/WebSocket) + Status & Reactions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial; }
+        .fade-in { animation: fadeIn 0.2s ease-in; }
+        @keyframes fadeIn { from {opacity:0; transform: translateY(4px);} to {opacity:1; transform: translateY(0);} }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen">
+<div class="max-w-4xl mx-auto p-4 md:p-8">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-blue-600 text-white p-6">
+            <h1 class="text-2xl md:text-3xl font-bold">User ↔ User Chat</h1>
+            <p class="text-blue-100">Delivered / Read ticks + Reactions</p>
+        </div>
+
+        <div class="p-6 border-b">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <label class="block">
+                    <span class="text-sm text-gray-600">Your userId</span>
+                    <input id="selfId" class="mt-1 w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500" placeholder="e.g. 1"/>
+                </label>
+                <label class="block">
+                    <span class="text-sm text-gray-600">WebSocket URL</span>
+                    <input id="wsUrl" class="mt-1 w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500" value="ws://localhost:8080/ws"/>
+                </label>
+                <button id="connectBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg shadow">Connect</button>
+                <button id="disconnectBtn" class="hidden bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg shadow">Disconnect</button>
+            </div>
+            <div id="status" class="mt-3 text-sm font-medium text-red-600">Status: Disconnected</div>
+        </div>
+
+        <div class="p-6 grid gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <label class="block md:col-span-3">
+                    <span class="text-sm text-gray-600">Send to userId</span>
+                    <input id="peerId" class="mt-1 w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500" placeholder="e.g. 2"/>
+                </label>
+                <button id="clearBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-lg">Clear chat</button>
+            </div>
+
+            <div id="feed" class="h-96 overflow-y-auto bg-gray-50 rounded-xl p-4 space-y-2 border"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-stretch">
+                <textarea id="textInput" rows="2" class="md:col-span-4 w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500" placeholder="Type a message… (Enter = send, Shift+Enter = newline)"></textarea>
+                <button id="sendBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow p-3">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ====== CONFIG ======
+    const SUB_BASE = "/user";           // subscribe to ${SUB_BASE}/{selfId}/queue/...
+    const DEST_SEND = "/app/chat.send";
+    const DEST_ACK  = "/app/chat.ack";
+    const DEST_REACT= "/app/chat.react";
+
+    // ====== DOM ======
+    const selfIdEl = document.getElementById("selfId");
+    const peerIdEl = document.getElementById("peerId");
+    const wsUrlEl  = document.getElementById("wsUrl");
+    const connectBtn = document.getElementById("connectBtn");
+    const disconnectBtn = document.getElementById("disconnectBtn");
+    const statusEl = document.getElementById("status");
+    const feedEl   = document.getElementById("feed");
+    const textInput= document.getElementById("textInput");
+    const sendBtn  = document.getElementById("sendBtn");
+    const clearBtn = document.getElementById("clearBtn");
+
+    // ====== STATE ======
+    let stompClient = null;
+    let selfId = null;
+    const bubbleByKey = new Map(); // key = id || clientMessageId -> { el, ticksEl, sumEl, data }
+    const EMOJI = ["👍","❤️","😂","😮","😢","😡"];
+
+    // ====== UTIL ======
+    function setConnected(connected) {
+      connectBtn.classList.toggle("hidden", connected);
+      disconnectBtn.classList.toggle("hidden", !connected);
+      selfIdEl.disabled = connected;
+      wsUrlEl.disabled  = connected;
+      statusEl.textContent = connected ? "Status: Connected" : "Status: Disconnected";
+      statusEl.className   = connected ? "mt-3 text-sm font-medium text-green-600" : "mt-3 text-sm font-medium text-red-600";
+    }
+    function uuid() {
+      return (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"-"+Math.random());
+    }
+    function keyOf(m) { return m.id ?? m.clientMessageId; }
+    function statusLabel(s) {
+      if (s === "READ") return "✓✓ read";
+      if (s === "DELIVERED") return "✓ delivered";
+      return "• sent";
+    }
+    function reactionSummary(map) {
+      if (!map) return "";
+      const parts = [];
+      Object.entries(map).forEach(([emo, count]) => parts.push(`${emo} ${count}`));
+      return parts.join("  ");
+    }
+
+    // Active chat + focus helpers (for instant READ)
+    function isActiveChatWith(userId) {
+      return String(peerIdEl.value.trim()) === String(userId);
+    }
+    function canInstantRead() {
+      return document.visibilityState === "visible" && window.hasFocus();
+    }
+    function isNearBottom(el, px = 24) {
+      return el.scrollHeight - el.scrollTop - el.clientHeight < px;
+    }
+
+    // ====== RENDER ======
+    function addBubble(data, mine) {
+      const row = document.createElement("div");
+      row.className = `w-full flex ${mine ? "justify-end" : "justify-start"} fade-in`;
+
+      const bubble = document.createElement("div");
+      bubble.className = `group relative max-w-[85%] rounded-2xl px-4 py-2 shadow ${mine ? "bg-blue-600 text-white" : "bg-white border"}`;
+      bubble.dataset.key = keyOf(data);
+
+      const meta = document.createElement("div");
+      meta.className = `text-xs opacity-75 ${mine ? "text-blue-100" : "text-gray-500"}`;
+      meta.textContent = `${mine ? "You" : "User " + data.senderId} → ${data.recipientId} • ${new Date(data.timestamp || Date.now()).toLocaleString()}`;
+
+      const text = document.createElement("div");
+      text.className = "whitespace-pre-wrap mt-0.5";
+      text.textContent = data.content;
+
+      const ticks = document.createElement("div");
+      ticks.className = `absolute -bottom-5 right-2 text-xs ${mine ? "text-blue-500" : "text-gray-400"}`;
+      ticks.textContent = statusLabel(data.status || "SENT");
+
+      const chip = document.createElement("div");
+      chip.className = "absolute -bottom-4 left-2 text-sm bg-white border rounded-full px-2 py-0.5 hidden group-hover:block";
+      chip.textContent = "😊";
+      chip.style.cursor = "pointer";
+      chip.addEventListener("click", () => openPicker(data));
+
+      const rsum = document.createElement("div");
+      rsum.className = "reaction-summary absolute bottom-[50%] -left-7 text-xs bg-white border rounded-full px-2 cursor-pointer";
+      rsum.textContent = reactionSummary(data.reactions);
+
+      bubble.appendChild(meta);
+      bubble.appendChild(text);
+      bubble.appendChild(ticks);
+      bubble.appendChild(chip);
+      bubble.appendChild(rsum);
+      row.appendChild(bubble);
+      feedEl.appendChild(row);
+      feedEl.scrollTop = feedEl.scrollHeight;
+
+      bubbleByKey.set(keyOf(data), { el: bubble, ticksEl: ticks, sumEl: rsum, data });
+
+      // Auto-ack flow:
+      if (!mine) {
+        // Always DELIVERED immediately
+        sendAck(data, "DELIVERED");
+        // If chat is active & visible → mark READ right away
+        if (isActiveChatWith(data.senderId)) {
+          sendAck(data, "READ");
+        } else {
+          // Otherwise: fallback to READ once bubble is visibly in viewport (>=60%)
+          readObserver.observe(bubble);
+        }
+      }
+    }
+
+    // rank helper
+        const rank = { "SENT": 0, "DELIVERED": 1, "READ": 2 };
+
+        function updateStatus(m) {
+          const ref = bubbleByKey.get(keyOf(m));
+          if (!ref) return;
+
+          const oldStatus = ref.data.status || "SENT";
+          const newStatus = m.status || oldStatus;
+
+          // only upgrade; never downgrade
+          if (rank[newStatus] >= rank[oldStatus]) {
+            ref.data = { ...ref.data, ...m, status: newStatus };
+            ref.ticksEl.textContent = statusLabel(newStatus);
+          }
+
+          // keep reactions in sync even if status ignored
+          if (m.reactions && ref.sumEl) ref.sumEl.textContent = reactionSummary(m.reactions);
+        }
+
+
+    function updateReactions(m) {
+      const ref = bubbleByKey.get(keyOf(m));
+      if (!ref) return;
+      ref.data.reactions = m.reactions;
+      if (ref.sumEl) ref.sumEl.textContent = reactionSummary(m.reactions);
+    }
+
+    // ====== INTERSECTION OBSERVER (READ on view) ======
+    const readObserver = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const key = entry.target.dataset.key;
+            const ref = bubbleByKey.get(key);
+            if (!ref) return;
+            const mine = String(ref.data.senderId) === String(selfId);
+            if (!mine && ref.data.status !== "READ") {
+              sendAck(ref.data, "READ");
+            }
+            readObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { root: feedEl, threshold: 0.6 }
+    );
+
+    // Sweep currently visible bubbles when the window/tab becomes active,
+    // or when switching active peer
+    function tryMarkVisibleAsRead() {
+      if (!canInstantRead()) return;
+      const targetPeer = peerIdEl.value.trim();
+      bubbleByKey.forEach(({ el, data }) => {
+        const mine = String(data.senderId) === String(selfId);
+        if (mine) return;
+        if (String(data.senderId) !== String(targetPeer)) return;
+        if (data.status === "READ") return;
+
+        // Aggressive policy: if near bottom OR fully in viewport, mark READ
+        const rect = el.getBoundingClientRect();
+        const fullyInView = rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+        if (fullyInView || isNearBottom(feedEl)) {
+          sendAck(data, "READ");
+        }
+      });
+    }
+
+    // ====== SENDERS ======
+    function sendMessage() {
+      const to = peerIdEl.value.trim();
+      const content = textInput.value.trim();
+      if (!stompClient || !selfId || !to || !content) return;
+
+      const msg = {
+        clientMessageId: uuid(),
+        senderId: selfId,
+        recipientId: to,
+        content,
+        timestamp: new Date().toISOString(),
+      };
+      stompClient.send(DEST_SEND, {}, JSON.stringify(msg));
+      textInput.value = "";
+      textInput.focus();
+    }
+
+    function sendAck(m, type) {
+      stompClient.send(
+        DEST_ACK, {}, JSON.stringify({
+          messageId: m.id,
+          clientMessageId: m.clientMessageId,
+          type,
+          actorId: selfId,
+        })
+      );
+    }
+
+    function sendReaction(m, emoji) {
+      stompClient.send(
+        DEST_REACT, {}, JSON.stringify({
+          messageId: m.id,
+          clientMessageId: m.clientMessageId,
+          actorId: selfId,
+          emoji,
+        })
+      );
+    }
+
+    // ====== REACTION PICKER ======
+    function openPicker(m) {
+      const ref = bubbleByKey.get(keyOf(m));
+      if (!ref) return;
+      const existing = ref.el.querySelector(".reaction-picker");
+      if (existing) { existing.remove(); return; }
+
+      const picker = document.createElement("div");
+      picker.className = "reaction-picker absolute -bottom-14 right-2 bg-white border rounded-xl shadow p-1 flex space-x-1";
+      EMOJI.forEach(e => {
+        const b = document.createElement("button");
+        b.className = "px-2 py-1 hover:bg-gray-100 rounded";
+        b.textContent = e;
+        b.addEventListener("click", () => { sendReaction(ref.data, e); picker.remove(); });
+        picker.appendChild(b);
+      });
+      ref.el.appendChild(picker);
+    }
+
+    // ====== WIRING ======
+    sendBtn.addEventListener("click", sendMessage);
+    textInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    clearBtn.addEventListener("click", () => { feedEl.innerHTML = ""; bubbleByKey.clear(); });
+
+    // Mark visible as READ on focus/visibility/peer switch
+    window.addEventListener("focus", tryMarkVisibleAsRead);
+    document.addEventListener("visibilitychange", tryMarkVisibleAsRead);
+    peerIdEl.addEventListener("change", tryMarkVisibleAsRead);
+    peerIdEl.addEventListener("keyup", (e) => { if (e.key === "Enter") tryMarkVisibleAsRead(); });
+
+    // Connect / Disconnect
+    connectBtn.addEventListener("click", () => {
+      const id = selfIdEl.value.trim();
+      if (!id) { alert("Enter your userId"); return; }
+
+      const socket = new WebSocket(wsUrlEl.value.trim());
+      stompClient = Stomp.over(socket);
+      stompClient.debug = null;
+
+      stompClient.connect(
+        {},
+        () => {
+          selfId = id;
+          setConnected(true);
+
+          // messages
+          stompClient.subscribe(`${SUB_BASE}/${selfId}/queue/chat`, (frame) => {
+            const m = JSON.parse(frame.body);
+            const mine = String(m.senderId) === String(selfId);
+            addBubble(m, mine);
+          });
+
+          // status updates (DELIVERED/READ)
+          stompClient.subscribe(`${SUB_BASE}/${selfId}/queue/chat.status`, (frame) => {
+            const m = JSON.parse(frame.body);
+            updateStatus(m);
+          });
+
+          // reactions
+          stompClient.subscribe(`${SUB_BASE}/${selfId}/queue/chat.react`, (frame) => {
+            const m = JSON.parse(frame.body);
+            updateReactions(m);
+          });
+
+          // When first connecting, sweep any currently visible messages
+          tryMarkVisibleAsRead();
+        },
+        (err) => {
+          console.error("STOMP error:", err);
+          alert("Connection failed. See console.");
+          setConnected(false);
+        }
+      );
+    });
+
+    disconnectBtn.addEventListener("click", () => {
+      if (stompClient) {
+        stompClient.disconnect(() => setConnected(false));
+      }
+    });
+</script>
+</body>
+</html>
