@@ -27,5 +27,4 @@ public class CatchYaApplication {
 		}
 		SpringApplication.run(CatchYaApplication.class, args);
 	}
-
 }

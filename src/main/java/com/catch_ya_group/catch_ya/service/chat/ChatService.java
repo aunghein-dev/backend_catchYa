@@ -1,8 +1,8 @@
 package com.catch_ya_group.catch_ya.service.chat;
 
-import com.catch_ya_group.catch_ya.modal.chatpayload.ChatAck;
-import com.catch_ya_group.catch_ya.modal.chatpayload.ChatMessage;
-import com.catch_ya_group.catch_ya.modal.chatpayload.ChatReact;
+import com.catch_ya_group.catch_ya.modal.chatpayload.*;
+import com.catch_ya_group.catch_ya.modal.dto.ChatHistory;
+import com.catch_ya_group.catch_ya.modal.dto.ChatReactionHistory;
 import com.catch_ya_group.catch_ya.modal.entity.*;
 import com.catch_ya_group.catch_ya.modal.projection.MessageStatus;
 import com.catch_ya_group.catch_ya.repository.ChatMessageRepository;
@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -20,7 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ChatService {
 
-    private final ChatMessageRepository messages;
+    private final ChatMessageRepository chatMessageRepository;
     private final MessageReactionRepository reactions;
     private final SimpMessagingTemplate broker;
 
@@ -40,7 +42,7 @@ public class ChatService {
                 .status(MessageStatus.SENT)
                 .build();
 
-        ent = messages.save(ent);
+        ent = chatMessageRepository.save(ent);
 
         ChatMessage payload = ChatMapper.toDto(ent, Map.of());
         // send to recipient and echo to sender
@@ -54,8 +56,8 @@ public class ChatService {
     @Transactional
     public ChatMessage handleAck(ChatAck ack) {
         ChatMessageEntity ent = (ack.getMessageId()!=null)
-                ? messages.findById(ack.getMessageId()).orElseThrow()
-                : messages.findByClientMessageId(ack.getClientMessageId()).orElseThrow();
+                ? chatMessageRepository.findById(ack.getMessageId()).orElseThrow()
+                : chatMessageRepository.findByClientMessageId(ack.getClientMessageId()).orElseThrow();
 
         Instant now = Instant.now();
         MessageStatus current = ent.getStatus();
@@ -71,7 +73,7 @@ public class ChatService {
             ent.setStatus(MessageStatus.READ);
             if (ent.getDeliveredAt() == null) ent.setDeliveredAt(now);
         }
-        ent = messages.save(ent);
+        ent = chatMessageRepository.save(ent);
         ChatMessage statusUpdate = ChatMapper.toDto(ent, summarize(ent.getId()));
 
         // notify both sides on dedicated status topic
@@ -85,8 +87,8 @@ public class ChatService {
     @Transactional
     public ChatMessage handleReaction(ChatReact react) {
         ChatMessageEntity ent = (react.getMessageId()!=null)
-                ? messages.findById(react.getMessageId()).orElseThrow()
-                : messages.findByClientMessageId(react.getClientMessageId()).orElseThrow();
+                ? chatMessageRepository.findById(react.getMessageId()).orElseThrow()
+                : chatMessageRepository.findByClientMessageId(react.getClientMessageId()).orElseThrow();
 
         Long uid = Long.valueOf(react.getActorId());
 
@@ -107,4 +109,63 @@ public class ChatService {
         broker.convertAndSend(b, withReactions);
         return withReactions;
     }
+
+    public ChatListResponse getRecentChatListForUser(Long userId, int rows) {
+        List<RecentMessageRow> raw = chatMessageRepository.getRecentChatListRows(userId, rows);
+
+        ChatListResponse dto = new ChatListResponse();
+        if (!raw.isEmpty()) {
+            dto.setMineProImgUrl(raw.get(0).getMine_pro_img_url());
+        }
+
+        List<RecentMessageResponse> items = raw.stream().map(r -> {
+            RecentMessageResponse m = new RecentMessageResponse();
+            m.setOtherUserId(r.getOther_user_id());
+            m.setOtherProImgUrl(r.getOther_pro_img_url());
+            m.setOtherFullName(r.getOther_full_name());
+            m.setOtherUniqueName(r.getOther_unique_name());
+            m.setOtherPhoneNo(r.getOther_phone_no());
+            m.setChatContent(r.getChat_content());
+            m.setCreatedAt(r.getCreated_at());
+            m.setSenderId(r.getSender_id());
+            m.setRecipientId(r.getRecipient_id());
+            return m;
+        }).toList();
+
+        dto.setRecentMessageResponse(items);
+        return dto;
+    }
+
+    public List<ChatHistory> getChatHistory(Long currentUserId, Long targetUserId) {
+        List<ChatMessageEntity> messages = chatMessageRepository.getChatThread(currentUserId, targetUserId);
+        List<MessageReaction> reactions = chatMessageRepository.getChatReactions(currentUserId, targetUserId);
+
+        Map<Long, List<ChatReactionHistory>> reactionsByMessage =
+                reactions.stream().collect(Collectors.groupingBy(
+                        r -> r.getMessage().getId(),   // <-- use associated message id
+                        Collectors.mapping(r -> (ChatReactionHistory) new ChatReactionHistory() {
+                            @Override public Long getId() { return r.getId(); }
+                            @Override public Instant getCreatedAt() { return r.getCreatedAt(); }
+                            @Override public String getEmoji() { return r.getEmoji(); }
+                            @Override public Long getUserId() { return r.getUserId(); }
+                            @Override public Long getMessageId() { return r.getMessage().getId(); }  // <-- here
+                        }, Collectors.toList())
+                ));
+
+        return messages.stream().map(m -> {
+            ChatHistory dto = new ChatHistory();
+            dto.setId(m.getId());
+            dto.setSenderId(m.getSenderId());
+            dto.setRecipientId(m.getRecipientId());
+            dto.setContent(m.getContent());
+            dto.setStatus(m.getStatus().toString());
+            dto.setCreatedAt(m.getCreatedAt());
+            dto.setDeliveredAt(m.getDeliveredAt());
+            dto.setReadAt(m.getReadAt());
+            dto.setChatReactionHistoryList(reactionsByMessage.getOrDefault(m.getId(), List.of()));
+            return dto;
+        }).toList();
+    }
+
+
 }
