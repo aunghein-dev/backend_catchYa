@@ -17,13 +17,13 @@ public class NotificationService {
 
     @Transactional
     public List<Notification> readNotifications(Long userId) {
-        List<Notification> notifications = notificationRepository.findByUserId(userId);
+        List<Notification> notifications = notificationRepository.findByUserIdOrderByNotiDateTimeDesc(userId);
         notifications.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(notifications);
         return notifications;
     }
 
     public List<Notification> getNotificationForUser(Long userId) {
-        return notificationRepository.findByUserId(userId);
+        return notificationRepository.findByUserIdOrderByNotiDateTimeDesc(userId);
     }
 }
