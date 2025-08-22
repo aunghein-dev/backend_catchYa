@@ -2,12 +2,10 @@ version: "3.8"
 
 services:
   app:
-    build: .                         # build from Dockerfile
+    build: .
     container_name: catch-ya
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8888:8080"                  # host:container → reach app at http://SERVER_IP:8888
+      - "127.0.0.1:8888:8080"
     env_file:
-      - /opt/catch-ya/.env           # injects env vars into container
-    volumes:
-      - /opt/catch-ya/.env:/app/.env # also mounts the file so dotenv-java can read it
+      - /opt/catch-ya/.env
