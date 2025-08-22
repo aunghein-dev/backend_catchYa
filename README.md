@@ -1,6 +1,6 @@
 <img src="https://file.catchya.online/public/1755278567155-catch-ya.png" width="144" align="right" hspace="0" />
 
-# Catch-Ya Social Media Project
+# CatchYa
 
 ![Language](https://img.shields.io/badge/language-Java-blue)
 ![Framework](https://img.shields.io/badge/framework-Spring%20Boot-orange)
@@ -9,52 +9,49 @@
 ![Project Status](https://img.shields.io/badge/status-active-brightgreen)
 
 
-**Catch-Ya** is an active social media application built using Spring Boot. It supports real-time notifications via WebSockets, geospatial friend searching with PostGIS, and media storage using MinIO. Users can find friends nearby and get live updates on activities.
+**Catch-Ya** is a high-performance social media backend engineered with **Spring Boot** to power modern, interactive applications. This robust platform seamlessly integrates real-time communication with advanced geospatial capabilities, allowing users to connect and discover friends based on their location.
 
-## Technologies & Tools
+Core Features
+-------------
 
-- **Backend:** Spring Boot, Spring Data JPA
-- **WebSockets:** Real-time notifications using STOMP/WebSocket
-- **Database:** PostgreSQL + PostGIS for geospatial queries
-- **Security:** Spring Security + JWT Authentication
-- **File Storage:** MinIO for media handling
-- **OTP Service:** SMS POH (Myanmar Local Service)
-- **Validation:** Spring Boot Validation
-- **Search:** Find friends nearby using Hibernate Spatial & JTS
-- **Documentation:** Swagger UI / SpringDoc OpenAPI
-- **Other Libraries:** Lombok, OkHttp, JJWT
-
-## Overview
-
-**Catch-Ya** is a modern social media backend project built with **Spring Boot**, **WebSocket** notifications, and **PostgreSQL/PostGIS** for spatial queries. The project allows users to:
-
-- Connect and send/receive real-time notifications via WebSockets.
-- Search and find nearby friends using location-based queries.
-- Manage user authentication with JWT and Spring Security.
-- Store multimedia content (images) using MinIO or other storage solutions.
-
-This backend serves as the foundation for mobile and web clients to build interactive, location-aware social features.
+*   **Real-Time Interactivity:** Leverage **WebSockets (STOMP)** for instant, live updates, including notifications for likes, comments, and messages, creating a dynamic user experience.
+*   **Location-Based Discovery:** Utilize **PostGIS** and **Hibernate Spatial** to enable precise, efficient geospatial queries, allowing users to find and connect with friends in their vicinity.
+*   **Secure Authentication:** Implement a robust security model with **Spring Security** and **JWT (JSON Web Tokens)** to ensure secure user registration and API access.
+*   **Scalable Media Handling:** Manage multimedia content with **MinIO**, providing a flexible and scalable solution for storing user-uploaded images and other media files.
+*   **Comprehensive API Documentation:** Ensure seamless integration for front-end clients with a fully documented **REST API** and WebSocket endpoints, powered by **SpringDoc OpenAPI (Swagger UI)**.
 
 
-## Features
+Technology Stack
+----------------
 
-- User registration and authentication with JWT
-- Real-time notifications (likes, messages, etc.) via WebSockets
-- Search for nearby friends using PostGIS
-- Media uploads (images) stored in MinIO
-- REST APIs and WebSocket endpoints documented with Swagger
+This project is built on a foundation of industry-standard and battle-tested technologies.
 
-## Dependencies
+### Backend & Core
 
-- Spring Boot 3.5.4
-- Spring Security
-- Spring WebSocket & WebFlux
-- PostgreSQL 42.7.5
-- Hibernate Spatial 6.2.7
-- JTS Core 1.19.0
-- MinIO 8.5.17
-- jjwt 0.12.6
-- OkHttp 2.7.5 / Okio 3.4.0
-- SpringDoc OpenAPI Starter WebMVC UI 2.1.0
+*   **Framework:** Spring Boot, Spring Data JPA
+*   **Security:** Spring Security, JJWT
+*   **Validation:** Spring Boot Validation
+*   **Search:** Hibernate Spatial, JTS
+*   **API Docs:** SpringDoc OpenAPI
 
 
+### Data & Services
+
+*   **Database:** PostgreSQL with PostGIS
+*   **Media Storage:** MinIO
+*   **Real-Time & Chat System:** Spring WebSocket & WebFlux
+*   **OTP Service:** SMS POH (Myanmar Local Service)
+*   **HTTP Client:** OkHttp
+
+
+Project Overview
+----------------
+
+Catch-Ya is a modern backend service designed to be the engine for a new generation of social applications. By combining the powerful, reactive capabilities of **Spring Boot** with specialized services like **PostGIS** and **MinIO**, this project provides a complete and production-ready solution for building features like:
+
+*   **Geo-fenced events or friend suggestions**
+*   **Live activity feeds and presence indicators**
+*   **Secure and verifiable user registration workflows**
+
+
+This backend is ready to support mobile and web clients, providing a scalable, secure, and feature-rich foundation for an engaging social experience.
