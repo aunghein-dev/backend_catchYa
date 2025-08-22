@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: catch-ya
+    restart: unless-stopped
+    ports:
+      - "8888:8080"   # host:container
