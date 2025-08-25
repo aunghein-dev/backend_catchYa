@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import java.util.TimeZone;
+
 @SpringBootApplication
 @EntityScan(basePackages = "com.catch_ya_group.catch_ya.modal.entity")
 @EnableJpaRepositories(basePackages = "com.catch_ya_group.catch_ya.repository")
@@ -16,6 +18,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class CatchYaApplication {
 
 	public static void main(String[] args) {
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Yangon"));
         try {
 			Dotenv dotenv = Dotenv.load();
 			dotenv.entries().forEach(entry -> {
