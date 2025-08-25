@@ -1,0 +1,63 @@
+name: CI/CD to Portainer (API)
+on:
+  push:
+    branches: [ "main" ]
+permissions:
+  contents: write
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/catch-ya
+  SHORT_SHA: ${{ github.sha.substr(0,7) }}
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ env.SHORT_SHA }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Render compose with new tag
+        run: |
+          sudo apt-get update && sudo apt-get install -y gettext-base jq
+          export IMAGE_TAG=${SHORT_SHA}
+          envsubst < docker-compose.prod.yml > deploy-compose.yml
+          echo "---- deploy-compose.yml ----"
+          sed -n '1,200p' deploy-compose.yml
+
+      - name: Get Portainer JWT (username/password)
+        id: auth
+        run: |
+          TOKEN=$(curl -fsS -X POST "${{ secrets.PORTAINER_URL }}/api/auth" \
+            -H "Content-Type: application/json" \
+            -d "{\"Username\":\"${{ secrets.PORTAINER_USERNAME }}\",\"Password\":\"${{ secrets.PORTAINER_PASSWORD }}\"}" \
+            | jq -r '.jwt')
+          [ -n "$TOKEN" ] && echo "token=$TOKEN" >> $GITHUB_OUTPUT || (echo "Auth failed" && exit 1)
+
+      - name: Update stack (redeploy)
+        run: |
+          BODY=$(jq -Rs '{stackFileContent: ., prune: true}' < deploy-compose.yml)
+          curl -fsS -X PUT \
+            "${{ secrets.PORTAINER_URL }}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}?endpointId=${{ secrets.PORTAINER_ENDPOINT_ID }}" \
+            -H "Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+            -H "Content-Type: application/json" \
+            --data-raw "${BODY}"
+          echo "Stack updated."
