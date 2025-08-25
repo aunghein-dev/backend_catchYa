@@ -94,6 +94,7 @@ jobs:
           INSECURE_TLS: ${{ vars.PORTAINER_INSECURE_TLS }}
           STACK_NAME: ${{ vars.PORTAINER_STACK_NAME }}               # e.g. catch-ya-spring
           STACK_ID_OVERRIDE: ${{ secrets.PORTAINER_STACK_ID_OVERRIDE }}
+          IMAGE: ${{ env.IMAGE }}                                    # ghcr.io/aunghein-dev/backend_catchya
         run: |
           sudo apt-get update && sudo apt-get install -y jq
 
@@ -142,17 +143,43 @@ jobs:
           echo "Git-based stack? $IS_GIT"
 
           if [ "$IS_GIT" = "1" ]; then
-            echo "Redeploying Git stack from its repo…"
+            echo "Git stack detected. Bumping image tag in repo compose, then redeploy…"
+
+            # 1) Commit the new image tag to the repo's compose (so Git redeploy uses it)
+            NEW_TAG="$GITHUB_SHA"
+
+            # If your compose uses ${IMAGE_TAG}, render it in-place:
+            export IMAGE_TAG="$NEW_TAG"
+            envsubst < docker-compose.prod.yml > docker-compose.prod.yml.new || true
+            mv docker-compose.prod.yml.new docker-compose.prod.yml || true
+
+            # Also handle the case where a fixed tag is present: replace tag after the image name
+            # e.g., ghcr.io/aunghein-dev/backend_catchya:<anything> -> ghcr.io/...:<NEW_TAG>
+            sed -i -E "s|(${IMAGE}:)[^\"'[:space:]]+|\1${NEW_TAG}|g" docker-compose.prod.yml || true
+
+            # Commit only if there are changes
+            if ! git diff --quiet -- docker-compose.prod.yml; then
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add docker-compose.prod.yml
+              git commit -m "deploy: ${IMAGE}:${NEW_TAG}"
+              git push
+            else
+              echo "No compose changes to commit (already on ${NEW_TAG}?)"
+            fi
+
+            # 2) Correct method: PUT for git/redeploy
             HTTP_CODE=$(curl $CURL_OPTS -o redeploy.json -w "%{http_code}" \
-              -X POST "$URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
+              -X PUT "$URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
               --data '{}')
             echo "git/redeploy HTTP_CODE=$HTTP_CODE"
             head -c 200 redeploy.json || true; echo
             [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ] || (echo "::error::Git redeploy failed." && exit 1)
+
           else
-            echo "Updating file/editor stack with rendered compose…"
+            echo "File/editor stack detected. Updating with rendered compose…"
             BODY=$(jq -Rs '{stackFileContent: ., prune: true}' < deploy-compose.yml)
             HTTP_CODE=$(curl $CURL_OPTS -o update.json -w "%{http_code}" \
               -X PUT "$URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" \
