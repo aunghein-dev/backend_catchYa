@@ -92,62 +92,67 @@ jobs:
         env:
           URL: ${{ secrets.PORTAINER_URL }}
           INSECURE_TLS: ${{ vars.PORTAINER_INSECURE_TLS }}
-          STACK_NAME: ${{ vars.PORTAINER_STACK_NAME }}
+          STACK_NAME: ${{ vars.PORTAINER_STACK_NAME }}               # e.g. catch-ya-spring
+          STACK_ID_OVERRIDE: ${{ secrets.PORTAINER_STACK_ID_OVERRIDE }}
         run: |
           sudo apt-get update && sudo apt-get install -y jq
 
-          # curl opts: follow redirects; allow -k only if self-signed
           CURL_OPTS="-sSL"
           if [ "$INSECURE_TLS" = "1" ]; then CURL_OPTS="$CURL_OPTS -k"; fi
 
-          # 1) Who am I? Get token from previous step
           TOKEN="${{ steps.auth.outputs.token }}"
           if [ -z "$TOKEN" ]; then echo "::error::Missing JWT token"; exit 1; fi
 
-          # 2) List stacks and auto-discover the one we want
           echo "Discovering stacks..."
           curl $CURL_OPTS -H "Authorization: Bearer $TOKEN" "$URL/api/stacks" -o stacks.json
           echo "Available stacks (Id, Name, EndpointId):"
           jq '.[] | {Id, Name, EndpointId}' stacks.json
 
-          if [ -z "$STACK_NAME" ]; then
-            echo "::error::PORTAINER_STACK_NAME variable is not set. Please set it to your stack's name in repo Variables."
-            exit 1
+          # Prefer explicit ID override if provided
+          if [ -n "$STACK_ID_OVERRIDE" ]; then
+            STACK_ID="$STACK_ID_OVERRIDE"
+            ENDPOINT_ID=$(jq -r --arg id "$STACK_ID" '.[] | select(.Id==($id|tonumber)) | .EndpointId' stacks.json)
+            if [ -z "$ENDPOINT_ID" ] || [ "$ENDPOINT_ID" = "null" ]; then
+              echo "::error::Invalid STACK_ID_OVERRIDE=$STACK_ID (not found)."
+              exit 1
+            fi
+            echo "Using override STACK_ID=$STACK_ID ENDPOINT_ID=$ENDPOINT_ID"
+          else
+            if [ -z "$STACK_NAME" ]; then
+              echo "::error::PORTAINER_STACK_NAME is not set. Set it (e.g. 'catch-ya-spring') OR set STACK_ID_OVERRIDE."
+              exit 1
+            fi
+            MATCH_COUNT=$(jq --arg n "$STACK_NAME" '[ .[] | select(.Name==$n) ] | length' stacks.json)
+            if [ "$MATCH_COUNT" -eq 0 ]; then
+              echo "::error::No stack named '$STACK_NAME' found."; exit 1
+            fi
+            if [ "$MATCH_COUNT" -gt 1 ]; then
+              echo "::warning::Multiple stacks named '$STACK_NAME'. Choosing the one with the highest Id."
+              STACK_ID=$(jq -r --arg n "$STACK_NAME" '[ .[] | select(.Name==$n) ] | max_by(.Id) | .Id' stacks.json)
+            else
+              STACK_ID=$(jq -r --arg n "$STACK_NAME" '.[] | select(.Name==$n) | .Id' stacks.json)
+            fi
+            ENDPOINT_ID=$(jq -r --argjson id "$STACK_ID" '.[] | select(.Id==$id) | .EndpointId' stacks.json)
+            echo "Selected STACK_ID=$STACK_ID ENDPOINT_ID=$ENDPOINT_ID"
           fi
 
-          STACK_ID=$(jq -r --arg n "$STACK_NAME" '.[] | select(.Name==$n) | .Id' stacks.json)
-          ENDPOINT_ID=$(jq -r --arg n "$STACK_NAME" '.[] | select(.Name==$n) | .EndpointId' stacks.json)
-          if [ -z "$STACK_ID" ] || [ "$STACK_ID" = "null" ]; then
-            echo "::error::Could not find a stack named '$STACK_NAME'. Check the printed list above."
-            exit 1
-          fi
-          if [ -z "$ENDPOINT_ID" ] || [ "$ENDPOINT_ID" = "null" ]; then
-            echo "::error::Stack found but EndpointId missing. Check your Portainer setup."
-            exit 1
-          fi
-          echo "Using STACK_ID=$STACK_ID ENDPOINT_ID=$ENDPOINT_ID"
-
-          # 3) Inspect the stack to see if it's Git-based
+          # Inspect to detect Git vs file/editor stack
           curl $CURL_OPTS -H "Authorization: Bearer $TOKEN" "$URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" -o stack.json
           IS_GIT=$(jq -r 'if .GitConfig then "1" else "0" end' stack.json)
           echo "Git-based stack? $IS_GIT"
 
           if [ "$IS_GIT" = "1" ]; then
-            echo "Stack is Git-based. Redeploying from Git…"
-            # IMPORTANT: For Git stacks, Portainer ignores stackFileContent.
-            # You must commit the tag bump to the repo (the workflow already built the image).
-            # Then ask Portainer to redeploy from Git:
+            echo "Redeploying Git stack from its repo…"
             HTTP_CODE=$(curl $CURL_OPTS -o redeploy.json -w "%{http_code}" \
               -X POST "$URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
               -H "Authorization: Bearer $TOKEN" \
               -H "Content-Type: application/json" \
               --data '{}')
             echo "git/redeploy HTTP_CODE=$HTTP_CODE"
-            head -c 200 redeploy.json || true
-            echo
+            head -c 200 redeploy.json || true; echo
             [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ] || (echo "::error::Git redeploy failed." && exit 1)
           else
-            echo "Stack is file/editor based. Updating stack content…"
+            echo "Updating file/editor stack with rendered compose…"
             BODY=$(jq -Rs '{stackFileContent: ., prune: true}' < deploy-compose.yml)
             HTTP_CODE=$(curl $CURL_OPTS -o update.json -w "%{http_code}" \
               -X PUT "$URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" \
@@ -155,8 +160,7 @@ jobs:
               -H "Content-Type: application/json" \
               --data-raw "$BODY")
             echo "update HTTP_CODE=$HTTP_CODE"
-            head -c 200 update.json || true
-            echo
+            head -c 200 update.json || true; echo
             [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ] || (echo "::error::Stack update failed." && exit 1)
           fi
 
