@@ -48,14 +48,45 @@ jobs:
           echo "---- deploy-compose.yml ----"
           sed -n '1,200p' deploy-compose.yml
 
-      - name: Get Portainer JWT (username/password)
+      - name: Get Portainer JWT (robust)
         id: auth
+        env:
+          URL: ${{ secrets.PORTAINER_URL }}
+          USERNAME: ${{ secrets.PORTAINER_USERNAME }}
+          PASSWORD: ${{ secrets.PORTAINER_PASSWORD }}
+          INSECURE_TLS: ${{ vars.PORTAINER_INSECURE_TLS }}
         run: |
-          TOKEN=$(curl -fsS -X POST "${{ secrets.PORTAINER_URL }}/api/auth" \
+          sudo apt-get update && sudo apt-get install -y jq
+
+          # Build JSON safely (handles special characters)
+          BODY=$(jq -n --arg u "$USERNAME" --arg p "$PASSWORD" '{Username:$u, Password:$p}')
+
+          # Follow redirects; allow -k only if INSECURE_TLS=1
+          CURL_OPTS="-sSL"
+          if [ "$INSECURE_TLS" = "1" ]; then CURL_OPTS="$CURL_OPTS -k"; fi
+
+          HTTP_CODE=$(curl $CURL_OPTS -o resp.json -w "%{http_code}" \
+            -X POST "$URL/api/auth" \
             -H "Content-Type: application/json" \
-            -d "{\"Username\":\"${{ secrets.PORTAINER_USERNAME }}\",\"Password\":\"${{ secrets.PORTAINER_PASSWORD }}\"}" \
-            | jq -r '.jwt')
-          [ -n "$TOKEN" ] && echo "token=$TOKEN" >> $GITHUB_OUTPUT || (echo "Auth failed" && exit 1)
+            --data "$BODY")
+
+          echo "Auth HTTP_CODE=$HTTP_CODE"
+          echo "Auth response (first 200 chars):"
+          head -c 200 resp.json || true
+          echo
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::error::Portainer auth failed (HTTP $HTTP_CODE). Check PORTAINER_URL, HTTPS, and creds."
+            exit 1
+          fi
+
+          TOKEN=$(jq -r '.jwt // empty' < resp.json)
+          if [ -z "$TOKEN" ]; then
+            echo "::error::No .jwt in /api/auth response (likely HTML/redirect). Ensure /api is reachable at this URL."
+            exit 1
+          fi
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      
 
       - name: Update stack (redeploy)
         run: |
