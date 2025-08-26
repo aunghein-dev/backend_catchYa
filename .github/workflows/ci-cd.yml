@@ -44,7 +44,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y gettext-base jq
           export IMAGE_TAG=${GITHUB_SHA}
-          envsubst < docker-compose.prod.yml > deploy-compose.yml
+          envsubst < docker-compose.yml > deploy-compose.yml
           echo "---- deploy-compose.yml ----"
           sed -n '1,200p' deploy-compose.yml
 
@@ -150,18 +150,18 @@ jobs:
 
             # If your compose uses ${IMAGE_TAG}, render it in-place:
             export IMAGE_TAG="$NEW_TAG"
-            envsubst < docker-compose.prod.yml > docker-compose.prod.yml.new || true
-            mv docker-compose.prod.yml.new docker-compose.prod.yml || true
+            envsubst < docker-compose.yml > docker-compose.yml.new || true
+            mv docker-compose.yml.new docker-compose.yml || true
 
             # Also handle the case where a fixed tag is present: replace tag after the image name
             # e.g., ghcr.io/aunghein-dev/backend_catchya:<anything> -> ghcr.io/...:<NEW_TAG>
-            sed -i -E "s|(${IMAGE}:)[^\"'[:space:]]+|\1${NEW_TAG}|g" docker-compose.prod.yml || true
+            sed -i -E "s|(${IMAGE}:)[^\"'[:space:]]+|\1${NEW_TAG}|g" docker-compose.yml || true
 
             # Commit only if there are changes
-            if ! git diff --quiet -- docker-compose.prod.yml; then
+            if ! git diff --quiet -- docker-compose.yml; then
               git config user.name "github-actions[bot]"
               git config user.email "github-actions[bot]@users.noreply.github.com"
-              git add docker-compose.prod.yml
+              git add docker-compose.yml
               git commit -m "deploy: ${IMAGE}:${NEW_TAG}"
               git push
             else

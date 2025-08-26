@@ -10,4 +10,6 @@ public interface UserLocaResponseProjection {
     String getProPicsImgUrl();
     String getCreatedAt();
     Integer getViewedCnt();
+    String getInstanceContent();
+    String getInstancePostDate();
 }

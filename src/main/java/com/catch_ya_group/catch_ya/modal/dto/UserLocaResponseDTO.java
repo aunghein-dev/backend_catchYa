@@ -19,5 +19,7 @@ public class UserLocaResponseDTO {
     private String proPicsImgUrl;
     private String createdAt;
     private Integer viewedCnt;
+    private String instanceContent;
+    private String instancePostDate;
 
 }

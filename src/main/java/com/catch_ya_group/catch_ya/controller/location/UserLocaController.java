@@ -7,8 +7,6 @@ import com.catch_ya_group.catch_ya.modal.entity.UserLoca;
 import com.catch_ya_group.catch_ya.modal.projection.UserLocaResponseProjection;
 import com.catch_ya_group.catch_ya.service.location.UserLocaService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +51,8 @@ public class UserLocaController {
                         .proPicsImgUrl(p.getProPicsImgUrl())
                         .createdAt(p.getCreatedAt())
                         .viewedCnt(p.getViewedCnt())
+                        .instanceContent(p.getInstanceContent())
+                        .instancePostDate(p.getInstancePostDate())
                         .build())
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtoList);
