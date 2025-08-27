@@ -16,12 +16,14 @@ public class RedisStartupVerifier {
     ApplicationRunner redisFailFastRunner(RedisConnectionFactory cf) {
         return args -> {
             try (RedisConnection conn = cf.getConnection()) {
+                System.out.println(">>> Redis connection info: " + conn.getNativeConnection());
                 String pong = conn.ping();
                 if (pong == null || !"PONG".equalsIgnoreCase(pong)) {
                     throw new IllegalStateException("Redis PING failed: " + pong);
                 }
+                System.out.println("✅ Redis responded with PONG");
             } catch (Exception e) {
-                throw new IllegalStateException("Redis is not available at startup.", e);
+                throw new IllegalStateException("❌ Redis is not available at startup.", e);
             }
         };
     }
