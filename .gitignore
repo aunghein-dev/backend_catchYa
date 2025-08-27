@@ -1,0 +1,83 @@
+# ---------------------
+# Maven / Build outputs
+# ---------------------
+/target/
+/out/
+/build/
+
+# ---------------------
+# Logs & temp files
+# ---------------------
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+
+# ---------------------
+# IntelliJ IDEA
+# ---------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ---------------------
+# VS Code
+# ---------------------
+.vscode/
+.history/
+
+# ---------------------
+# OS-specific
+# ---------------------
+Thumbs.db
+.DS_Store
+
+# ---------------------
+# Spring Boot
+# ---------------------
+/logs/
+/*.pid
+/*.seed
+/*.lock
+
+# ---------------------
+# Docker
+# ---------------------
+/docker-data/
+/docker-compose.override.yml
+
+# ---------------------
+# Redis / DB data (local only)
+# ---------------------
+/redis-data/
+/pgdata/
+
+# ---------------------
+# Environment & Secrets
+# ---------------------
+.env
+*.env
+*.secret
+*.key
+*.crt
+*.pem
+
+# ---------------------
+# Swagger / OpenAPI generated
+# ---------------------
+/openapi-generated/
+
+# ---------------------
+# Test Reports
+# ---------------------
+/surefire-reports/
+/jacoco.exec
+
+# ---------------------
+# Node (if frontend lives inside)
+# ---------------------
+node_modules/
+dist/
