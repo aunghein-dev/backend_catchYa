@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Presence / Redis Test (Phone + Password Only)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root { --bg:#0b1020; --card:#121a33; --line:#213054; --muted:#8ea4d2; --text:#e8ecf3; --accent:#2a6cf1; --warn:#de524c; }
+        *{box-sizing:border-box}
+        body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; background:var(--bg); color:var(--text); }
+        .wrap { max-width: 1000px; margin: 28px auto; padding: 0 16px; }
+        h2,h3 { margin: 0 0 12px; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px; }
+        .grid { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+        label { font-size:12px; opacity:.85; display:block; margin-bottom:6px; }
+        input { background:#0e152b; border:1px solid #2a3a63; color:var(--text); border-radius:10px; padding:10px 12px; width:100%; }
+        button { background:var(--accent); border:0; color:#fff; border-radius:10px; padding:10px 14px; cursor:pointer; }
+        button.secondary { background:#1e2a4e; }
+        button.warn { background:#de524c; }
+        button:disabled { opacity:.6; cursor:not-allowed; }
+        table { width:100%; border-collapse: collapse; font-size:14px; }
+        th, td { border-bottom:1px solid #25355d; padding:8px 10px; text-align:left; }
+        code, small { color: var(--muted); }
+        pre { background:#0e152b; border:1px solid #2a3a63; border-radius:10px; padding:10px; height:200px; overflow:auto; }
+        .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#17305f; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+    <h2>Presence / Redis Test</h2>
+
+    <div class="card">
+        <h3>1) Login (Phone + Password)</h3>
+        <div class="grid">
+            <div>
+                <label>API Base URL</label>
+                <input id="apiBase" value="http://localhost:8080" />
+                <small>Used for REST: <code>/public/v1/auth/login</code>, <code>/public/presence/online</code>, <code>/public/presence/last-seen</code></small>
+            </div>
+            <div>
+                <label>WebSocket URL</label>
+                <input id="wsUrl" value="ws://localhost:8080/ws" />
+                <small>We append <code>?uid=&lt;userId&gt;</code> automatically</small>
+            </div>
+            <div>
+                <label>Phone No</label>
+                <input id="phone" placeholder="+959..." />
+            </div>
+            <div>
+                <label>Password</label>
+                <input id="password" type="password" placeholder="••••••••" />
+            </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+            <button id="btnLogin">Login</button>
+            <span id="loginStatus" class="pill">Not logged in</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>2) Connect WebSocket + Presence Ping</h3>
+        <div class="grid grid-3">
+            <div>
+                <label>Current User ID</label>
+                <input id="userId" readonly placeholder="(after login)" />
+            </div>
+            <div>
+                <label>Auto Ping Interval (seconds)</label>
+                <input id="interval" type="number" min="5" value="30" />
+            </div>
+            <div>
+                <label>Status</label>
+                <input id="connStatus" readonly value="Disconnected" />
+            </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+            <button id="btnConnect" disabled>Connect</button>
+            <button id="btnDisconnect" class="warn" disabled>Disconnect</button>
+            <button id="btnSubscribe" class="secondary" disabled>Subscribe /topic/presence</button>
+            <button id="btnUnsubscribe" class="secondary" disabled>Unsubscribe</button>
+            <button id="btnPing" disabled>Send Ping</button>
+            <button id="btnStart" disabled>Start Auto Ping</button>
+            <button id="btnStop" class="warn" disabled>Stop Auto Ping</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>3) Online List (from Redis)</h3>
+        <div class="row" style="margin-bottom:8px">
+            <button id="btnRefreshOnline" class="secondary">Refresh Now</button>
+            <button id="btnToggleAutoOnline" class="secondary">Auto Refresh: OFF</button>
+            <small>Uses <code>GET /public/presence/online</code>. Subscribing to <code>/topic/presence</code> also pushes changes.</small>
+        </div>
+        <table>
+            <thead><tr><th>#</th><th>User ID</th><th>Online</th><th>Last Seen (ms)</th><th>Last Seen (local time)</th></tr></thead>
+            <tbody id="tbodyOnline"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>4) Last Seen for IDs</h3>
+        <div class="grid grid-2">
+            <div>
+                <label>User IDs (comma-separated)</label>
+                <input id="idsCsv" placeholder="e.g. 101,202,303" />
+            </div>
+            <div style="display:flex; align-items:end; gap:10px;">
+                <button id="btnLastSeen" class="secondary">Fetch Last Seen</button>
+            </div>
+        </div>
+        <table style="margin-top:8px">
+            <thead><tr><th>#</th><th>User ID</th><th>Online</th><th>Last Seen (ms)</th><th>Last Seen (local time)</th></tr></thead>
+            <tbody id="tbodyLastSeen"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Presence Events</h3>
+        <table id="tbl">
+            <thead><tr><th>#</th><th>Received At</th><th>User ID</th><th>Online</th><th>lastSeen (ms)</th></tr></thead>
+            <tbody id="tbodyEvents"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Log</h3>
+        <pre id="log"></pre>
+    </div>
+</div>
+
+<script>
+    let client = null;
+    let presenceSub = null;
+    let autoPingTimer = null;
+    let autoOnlineTimer = null;
+    let eventRow = 0;
+    let onlineRefreshAuto = false;
+
+    const el = (id) => document.getElementById(id);
+    const log = (m) => {
+      const box = el('log');
+      const ts = new Date().toLocaleTimeString();
+      box.textContent += `[${ts}] ${m}\n`;
+      box.scrollTop = box.scrollHeight;
+    };
+    const fmtLocal = (ms) => {
+      const d = new Date(ms);
+      return isNaN(d.getTime()) ? '' : d.toLocaleString();
+    };
+    const setConn = (s) => el('connStatus').value = s;
+
+    function setUiLoggedIn(state, uid) {
+      el('btnConnect').disabled = !state;
+      el('userId').value = state ? uid : '';
+      el('loginStatus').textContent = state ? `Logged in as userId=${uid}` : 'Not logged in';
+    }
+
+    function setUiConnected(connected) {
+      el('btnConnect').disabled = connected;
+      el('btnDisconnect').disabled = !connected;
+      el('btnSubscribe').disabled = !connected || !!presenceSub;
+      el('btnUnsubscribe').disabled = !connected || !presenceSub;
+      el('btnPing').disabled = !connected;
+      el('btnStart').disabled = !connected || !!autoPingTimer;
+      el('btnStop').disabled = !connected || !autoPingTimer;
+    }
+
+    // --- LOGIN ---
+    async function login() {
+      const base = el('apiBase').value.trim();
+      const phoneNo = el('phone').value.trim();
+      const password = el('password').value;
+
+      try {
+        const res = await fetch(base + '/public/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNo, password })
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error('Login failed: ' + res.status + ' ' + t);
+        }
+        const data = await res.json();
+        const uid = data.userId;
+        if (!uid) throw new Error('Login OK but no userId in response');
+
+        setUiLoggedIn(true, uid);
+        log('Login OK. userId=' + uid);
+
+        // 🔹 Auto-connect WS after login
+        connectWs();
+
+      } catch (e) {
+        setUiLoggedIn(false);
+        log('Login error: ' + e.message);
+        alert(e.message);
+      }
+    }
+
+    // Build ws url with ?uid=<userId>
+    function wsUrlWithUid() {
+      const base = el('wsUrl').value.trim();
+      const uid = el('userId').value.trim();
+      try {
+        const u = new URL(base);
+        u.searchParams.set('uid', uid);
+        return u.toString();
+      } catch {
+        return base + (base.includes('?') ? '&' : '?') + 'uid=' + encodeURIComponent(uid);
+      }
+    }
+
+    // --- CONNECT (with deep diagnostics) ---
+    function connectWs() {
+      const url = wsUrlWithUid();
+      log('Opening native WebSocket to ' + url);
+
+      // Create native ws first so we can see low-level errors
+      const ws = new WebSocket(url);
+      ws.onopen  = () => log('WS OPEN (native)');
+      ws.onerror = (e) => log('WS ERROR (native) — likely handshake/URL/security issue');
+      ws.onclose = (e) => log(`WS CLOSE (native) code=${e.code} reason=${e.reason || '(none)'} clean=${e.wasClean}`);
+
+      // Wrap in STOMP
+      client = Stomp.over(ws);
+      client.debug = (s) => log('[STOMP] ' + s);
+
+      client.connect(
+        {}, // no headers
+        () => {
+          setConn('Connected');
+          setUiConnected(true);
+          log('STOMP CONNECTED');
+
+          // subscribe + start pings only AFTER confirmed connection
+          subscribePresence();
+          startAutoPing();
+          refreshOnline();
+
+          // turn on auto refresh if not already
+          if (!onlineRefreshAuto) {
+            onlineRefreshAuto = true;
+            el('btnToggleAutoOnline').textContent = 'Auto Refresh: ON';
+            autoOnlineTimer = setInterval(refreshOnline, 3000);
+          }
+        },
+        (err) => {
+          // err is often a string; when browser blocks WS you land here
+          log('STOMP CONNECT ERROR: ' + (typeof err === 'string' ? err : JSON.stringify(err)));
+          setUiConnected(false);
+          setConn('Error');
+        }
+      );
+    }
+
+    function disconnectWs() {
+      stopAutoPing();
+      if (presenceSub) { presenceSub.unsubscribe(); presenceSub = null; }
+      if (client) {
+        client.disconnect(() => log('DISCONNECTED'));
+        client = null;
+      }
+      setConn('Disconnected');
+      setUiConnected(false);
+    }
+
+    function subscribePresence() {
+      if (!client?.connected) return log('Not connected');
+      presenceSub = client.subscribe('/topic/presence', onPresenceEvent);
+      log('Subscribed to /topic/presence');
+      setUiConnected(true);
+    }
+
+    function unsubscribePresence() {
+      if (presenceSub) {
+        presenceSub.unsubscribe();
+        presenceSub = null;
+        log('Unsubscribed from /topic/presence');
+      }
+      setUiConnected(true);
+    }
+
+    function onPresenceEvent(frame) {
+      try {
+        const data = JSON.parse(frame.body);
+        const tbody = el('tbodyEvents');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${++eventRow}</td>
+          <td>${new Date().toLocaleTimeString()}</td>
+          <td>${data.userId}</td>
+          <td>${data.online ? '✅ Online' : '❌ Offline'}</td>
+          <td title="${fmtLocal(data.lastSeen)}">${data.lastSeen}</td>
+        `;
+        tbody.prepend(tr);
+      } catch (e) {
+        log('EVENT parse error: ' + e.message);
+      }
+    }
+
+    function sendPing() {
+      if (!client?.connected) return log('Not connected');
+      client.send('/app/presence.ping', {}, '{}');
+      log('PING sent');
+    }
+
+    function startAutoPing() {
+      const s = Math.max(5, parseInt(el('interval').value || '30', 10));
+      if (!client?.connected) return log('Not connected');
+      sendPing(); // immediate
+      autoPingTimer = setInterval(sendPing, s * 1000);
+      log('Auto ping started every ' + s + 's');
+      setUiConnected(true);
+    }
+    function stopAutoPing() {
+      if (autoPingTimer) {
+        clearInterval(autoPingTimer);
+        autoPingTimer = null;
+        log('Auto ping stopped');
+      }
+      setUiConnected(true);
+    }
+
+    async function refreshOnline() {
+      const base = el('apiBase').value.trim();
+      try {
+        const res = await fetch(base + '/public/presence/online');
+        const list = await res.json();
+        const tbody = el('tbodyOnline');
+        tbody.innerHTML = '';
+        list.forEach((e, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${i+1}</td>
+            <td>${e.userId}</td>
+            <td>${e.online ? '✅ Online' : '❌ Offline'}</td>
+            <td>${e.lastSeen ?? ''}</td>
+            <td>${fmtLocal(e.lastSeen)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        log('Online list: ' + list.length + ' user(s)');
+      } catch (e) {
+        log('Online fetch error: ' + e.message);
+      }
+    }
+
+    function toggleAutoOnline() {
+      onlineRefreshAuto = !onlineRefreshAuto;
+      el('btnToggleAutoOnline').textContent = 'Auto Refresh: ' + (onlineRefreshAuto ? 'ON' : 'OFF');
+      if (autoOnlineTimer) { clearInterval(autoOnlineTimer); autoOnlineTimer = null; }
+      if (onlineRefreshAuto) autoOnlineTimer = setInterval(refreshOnline, 3000);
+    }
+
+    async function fetchLastSeen() {
+      const base = el('apiBase').value.trim();
+      const idsCsv = el('idsCsv').value.trim();
+      if (!idsCsv) return;
+      try {
+        const res = await fetch(base + '/public/presence/last-seen?ids=' + encodeURIComponent(idsCsv));
+        const data = await res.json();
+        const entries = Object.values(data);
+        const tbody = el('tbodyLastSeen');
+        tbody.innerHTML = '';
+        entries.forEach((e, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${i+1}</td>
+            <td>${e.userId}</td>
+            <td>${e.online ? '✅ Online' : '❌ Offline'}</td>
+            <td>${e.lastSeen ?? ''}</td>
+            <td>${fmtLocal(e.lastSeen)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+        log('Last-seen for ' + entries.length + ' user(s)');
+      } catch (e) {
+        log('Last-seen error: ' + e.message);
+      }
+    }
+
+    // wire buttons
+    el('btnLogin').onclick = login;
+    el('btnConnect').onclick = connectWs;
+    el('btnDisconnect').onclick = disconnectWs;
+    el('btnSubscribe').onclick = subscribePresence;
+    el('btnUnsubscribe').onclick = unsubscribePresence;
+    el('btnPing').onclick = sendPing;
+    el('btnStart').onclick = startAutoPing;
+    el('btnStop').onclick = stopAutoPing;
+    el('btnRefreshOnline').onclick = refreshOnline;
+    el('btnToggleAutoOnline').onclick = toggleAutoOnline;
+    el('btnLastSeen').onclick = fetchLastSeen;
+
+    // initial UI
+    setUiLoggedIn(false);
+    setUiConnected(false);
+</script>
+</body>
+</html>

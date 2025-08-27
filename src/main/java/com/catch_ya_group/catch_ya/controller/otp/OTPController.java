@@ -26,10 +26,6 @@ public class OTPController {
     private final OTPRequestService otpRequestService;
 
     @Operation(summary = "Request OTP", description = "Sends a one-time password (OTP) to the specified phone number.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OTP sent successfully"),
-            @ApiResponse(responseCode = "500", description = "Failed to send OTP")
-    })
     @PostMapping("/request")
     public ResponseEntity<?> requestOtp(@RequestBody OtpRequest newRequest) {
         try {

@@ -37,6 +37,7 @@ public class ChatMessageEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private MessageStatus status = MessageStatus.SENT;
 
     private Instant deliveredAt;

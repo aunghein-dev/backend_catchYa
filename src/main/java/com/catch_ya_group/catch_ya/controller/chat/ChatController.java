@@ -1,4 +1,3 @@
-// src/main/java/com/catch_ya_group/catch_ya/controller/chat/ChatController.java
 package com.catch_ya_group.catch_ya.controller.chat;
 
 import com.catch_ya_group.catch_ya.modal.chatpayload.ChatAck;
