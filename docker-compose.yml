@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   app:
-    image: ghcr.io/aunghein-dev/backend_catchya:3fb17de6ab1441578eb09bd7e6f93d79a3e835d3
+    image: ghcr.io/aunghein-dev/backend_catchya:d3a8bfbe94e9f7ea570c12b4bb880bc48f57db11
     container_name: catch-ya
     restart: unless-stopped
     deploy:
