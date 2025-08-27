@@ -20,4 +20,4 @@ services:
 
 networks:
   catchya-net:
-    driver: bridge
+    external: true
