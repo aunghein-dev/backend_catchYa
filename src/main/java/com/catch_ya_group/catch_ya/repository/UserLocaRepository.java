@@ -50,13 +50,16 @@ public interface UserLocaRepository extends JpaRepository<UserLoca, Long> {
            i.full_name as fullName,
            i.pro_pics_img_url as proPicsImgUrl,
            i.created_at as createdAt,
-           lb.viewed_cnt as viewedCnt
+           lb.viewed_cnt as viewedCnt,
+           s.day_status as instance_content,
+           s.status_date as instance_post_date
     FROM user_loca l
     LEFT JOIN users u ON u.user_id = l.user_id
     LEFT JOIN user_infos i ON i.user_info_id = u.user_info_id
     LEFT JOIN leaderboard lb ON lb.leaderboard_id = u.user_id
+    LEFT JOIN instance_status s ON s.user_id = u.user_id
     WHERE l.user_id = :userId
-""", nativeQuery = true)
+    """, nativeQuery = true)
     UserLocaResponseProjection getCurrentUserLoca(@Param("userId") Long currentUserId);
 
     @Query(value = """
