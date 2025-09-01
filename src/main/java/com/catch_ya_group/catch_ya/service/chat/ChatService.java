@@ -9,6 +9,7 @@
     import com.catch_ya_group.catch_ya.modal.projection.MessageStatus;
     import com.catch_ya_group.catch_ya.repository.ChatMessageRepository;
     import com.catch_ya_group.catch_ya.repository.MessageReactionRepository;
+    import com.catch_ya_group.catch_ya.repository.UsersRepository;
     import lombok.RequiredArgsConstructor;
     import org.springframework.data.domain.PageRequest;
     import org.springframework.data.domain.Pageable;
@@ -28,6 +29,7 @@
         private final MessageReactionRepository reactions;
         private final SimpMessagingTemplate broker;
         private final ChatCacheService cache;
+        private final UsersRepository usersRepository;
 
         // helper
         private Map<String,Integer> summarize(Long messageId) {
@@ -135,9 +137,27 @@
                     String sid = h.get("lastSenderId");
                     if (sid != null) m.setSenderId(Long.parseLong(sid));
                     m.setRecipientId(userId);
-                    // optional: set profile fields if you cached them in conv hash
                     items.add(m);
                 }
+
+                // 🔁 NEW: batch-hydrate profile fields
+                var ids = items.stream().map(RecentMessageResponse::getOtherUserId).collect(Collectors.toSet());
+                var profiles = usersRepository.findSummaries(ids).stream()
+                        .collect(Collectors.toMap(UserSummary::getId, p -> p));
+
+                for (var m : items) {
+                    var p = profiles.get(m.getOtherUserId());
+                    if (p != null) {
+                        m.setOtherProImgUrl(p.getProImgUrl());
+                        m.setOtherFullName(p.getFullName());
+                        m.setOtherUniqueName(p.getUniqueName());
+                        m.setOtherPhoneNo(p.getPhoneNo());
+
+                        // optional: warm the conv hash so next cache hit already has these
+                        cache.updateConvProfile(m.getRecipientId(), m.getOtherUserId(), p);
+                    }
+                }
+
                 dto.setRecentMessageResponse(items);
                 return dto;
             }

@@ -1,5 +1,6 @@
 package com.catch_ya_group.catch_ya.service.chat;
 
+import com.catch_ya_group.catch_ya.modal.chatpayload.UserSummary;
 import com.catch_ya_group.catch_ya.modal.entity.ChatMessageEntity;
 import com.catch_ya_group.catch_ya.modal.projection.MessageStatus;
 import lombok.RequiredArgsConstructor;
@@ -143,5 +144,14 @@ public class ChatCacheService {
         }
         // Already newest-first because we used reverse* calls
         return result;
+    }
+
+    public void updateConvProfile(long userId, long peerId, UserSummary p) {
+        Map<String, String> conv = new HashMap<>();
+        conv.put("otherProImgUrl", p.getProImgUrl());
+        conv.put("otherFullName", p.getFullName());
+        conv.put("otherUniqueName", p.getUniqueName());
+        conv.put("otherPhoneNo", p.getPhoneNo());
+        redis.opsForHash().putAll(convHash(userId, peerId), conv);
     }
 }
