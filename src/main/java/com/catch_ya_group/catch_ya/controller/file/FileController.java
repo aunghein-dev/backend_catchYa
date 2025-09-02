@@ -22,14 +22,13 @@ public class FileController {
 
     @Operation(
             summary = "Upload a file",
-            description = "Uploads a file to the storage service. The uploaded file will have a unique timestamp-prefixed name."
+            description = "Uploads a file to the storage service. The uploaded file will have a unique timestamp-based name."
     )
     @PostMapping
     public ResponseEntity<String> uploadFile(@RequestPart("file") MultipartFile file) {
         try {
-            String objectName = System.currentTimeMillis() + "-" + file.getOriginalFilename();
-            String result = minioService.uploadFile(file, objectName);
-            return ResponseEntity.ok("File uploaded successfully: " + result);
+            String fileUrl = minioService.uploadFile(file);
+            return ResponseEntity.ok(fileUrl);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("File upload failed: " + e.getMessage());
@@ -38,13 +37,13 @@ public class FileController {
 
     @Operation(
             summary = "Delete a file",
-            description = "Deletes a file by its object name from the storage service."
+            description = "Deletes a file from the storage service using its URL or object name."
     )
-    @DeleteMapping("/{objectName}")
-    public ResponseEntity<String> deleteFile(@PathVariable String objectName) {
+    @DeleteMapping
+    public ResponseEntity<String> deleteFile(@RequestParam("fileUrl") String fileUrl) {
         try {
-            minioService.deleteFile(objectName);
-            return ResponseEntity.ok("File deleted successfully: " + objectName);
+            minioService.deleteFile(fileUrl);
+            return ResponseEntity.ok("File deleted successfully: " + fileUrl);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {

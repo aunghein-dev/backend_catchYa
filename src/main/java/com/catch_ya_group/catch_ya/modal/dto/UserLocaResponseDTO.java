@@ -21,5 +21,5 @@ public class UserLocaResponseDTO {
     private Integer viewedCnt;
     private String instanceContent;
     private String instancePostDate;
-
+    private String coverImgUrl;
 }

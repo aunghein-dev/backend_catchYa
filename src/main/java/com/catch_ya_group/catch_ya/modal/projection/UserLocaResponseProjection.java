@@ -12,4 +12,5 @@ public interface UserLocaResponseProjection {
     Integer getViewedCnt();
     String getInstanceContent();
     String getInstancePostDate();
+    String getCoverImgUrl();
 }

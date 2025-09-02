@@ -53,6 +53,7 @@ public class UserLocaController {
                         .viewedCnt(p.getViewedCnt())
                         .instanceContent(p.getInstanceContent())
                         .instancePostDate(p.getInstancePostDate())
+                        .coverImgUrl(p.getCoverImgUrl())
                         .build())
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtoList);

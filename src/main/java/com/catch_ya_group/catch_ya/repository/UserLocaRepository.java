@@ -52,7 +52,8 @@ public interface UserLocaRepository extends JpaRepository<UserLoca, Long> {
            i.created_at as createdAt,
            lb.viewed_cnt as viewedCnt,
            s.day_status as instance_content,
-           s.status_date as instance_post_date
+           s.status_date as instance_post_date,
+           i.cover_img_url\s
     FROM user_loca l
     LEFT JOIN users u ON u.user_id = l.user_id
     LEFT JOIN user_infos i ON i.user_info_id = u.user_info_id
