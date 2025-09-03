@@ -3,6 +3,8 @@ package com.catch_ya_group.catch_ya.controller.status;
 import com.catch_ya_group.catch_ya.modal.dto.StatusCreateRequest;
 import com.catch_ya_group.catch_ya.modal.entity.Status;
 import com.catch_ya_group.catch_ya.service.status.StatusService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,6 +29,7 @@ import java.util.List;
 public class StatusController {
 
     private final StatusService statusService;
+    private final ObjectMapper objectMapper;
 
     @Operation(summary = "Get all statuses", description = "Retrieve all statuses from the system")
     @GetMapping("/all")
@@ -58,24 +61,25 @@ public class StatusController {
         return ResponseEntity.ok(statusService.searchByKeyword(keyword));
     }
 
-    @Operation(summary = "Create new status", description = "Create a new status with content, keywords, and images")
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Status> create(
-            @RequestPart("payload") StatusCreateRequest payload,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+            @RequestPart("payload") String payloadJson,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images
+    ) throws JsonProcessingException {
+        StatusCreateRequest payload = objectMapper.readValue(payloadJson, StatusCreateRequest.class);
         Status saved = statusService.create(payload, images);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @Operation(summary = "Update status", description = "Update an existing status by ID (same payload/images as create)")
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Status> update(
             @PathVariable Long id,
-            @RequestPart("payload") StatusCreateRequest payload,
+            @RequestPart("payload") String payloadJson,
             @RequestPart(value = "images", required = false) List<MultipartFile> images,
             @RequestParam(name = "merge", defaultValue = "false") boolean merge,
             @RequestParam(name = "clearImages", defaultValue = "false") boolean clearImages
-    ) {
+    ) throws JsonProcessingException {
+        StatusCreateRequest payload = objectMapper.readValue(payloadJson, StatusCreateRequest.class);
         Status saved = statusService.update(id, payload, images, merge, clearImages);
         return ResponseEntity.ok(saved);
     }
