@@ -4,6 +4,7 @@ import com.catch_ya_group.catch_ya.modal.dto.StatusCreateRequest;
 import com.catch_ya_group.catch_ya.modal.entity.Status;
 import com.catch_ya_group.catch_ya.repository.StatusRepository;
 import com.catch_ya_group.catch_ya.service.file.MinioService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -142,8 +143,21 @@ public class StatusService {
         return statusRepository.save(existing);
     }
 
-
+    @Transactional
     public void delete(Long id) {
-        statusRepository.deleteById(id);
+        Status s = statusRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Status " + id + " not found"));
+
+        var urls = (s.getImages() == null) ? List.<String>of() : s.getImages();
+
+        for (String url : urls) {
+            try {
+                minioService.deleteFile(url);
+            } catch (Exception e) {
+                throw new IllegalStateException("Storage delete failed for " + url, e);
+            }
+        }
+        statusRepository.delete(s);
     }
+
 }

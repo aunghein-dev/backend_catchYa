@@ -86,7 +86,7 @@ public class StatusController {
 
     @Operation(summary = "Delete status", description = "Delete a status by ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id) {
         statusService.delete(id);
         return ResponseEntity.noContent().build();
     }
