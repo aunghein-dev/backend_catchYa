@@ -27,7 +27,7 @@
                     <span class="text-sm text-gray-600">API Base</span>
                     <input id="apiBase" class="mt-1 w-full p-3 rounded-lg border focus:ring-2 focus:ring-blue-500"
                            value="http://localhost:8080"/>
-                    <small class="text-gray-500">Used for /public/v1/chat/history/page</small>
+                    <small class="text-gray-500">Used for /private/v1/chat/history/page</small>
                 </label>
                 <label class="block">
                     <span class="text-sm text-gray-600">WS URL</span>
@@ -210,7 +210,7 @@
     /** ====== HISTORY (Redis → DB fallback on server) ====== */
     async function loadHistory({reset=false}={}){
       const base = apiBaseEl.value.trim();
-      const url = new URL(base + "/public/v1/chat/history/page");
+      const url = new URL(base + "/private/v1/chat/history/page");
       url.searchParams.set("currentUserId", selfId);
       url.searchParams.set("targetUserId", peerId);
       url.searchParams.set("limit", PAGE_SIZE);

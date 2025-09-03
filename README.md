@@ -1,4 +1,4 @@
-<img src="https://file.catchya.online/public/1755278567155-catch-ya.png" width="144" align="right" />
+<img src="https://file.catchya.online/public/catch-ya.png" width="144" align="right" />
 
 # CatchYa
 

@@ -1,5 +1,6 @@
 package com.catch_ya_group.catch_ya.controller.status;
 
+import com.catch_ya_group.catch_ya.modal.dto.StatusCreateRequest;
 import com.catch_ya_group.catch_ya.modal.entity.Status;
 import com.catch_ya_group.catch_ya.service.status.StatusService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,9 +9,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -55,15 +59,25 @@ public class StatusController {
     }
 
     @Operation(summary = "Create new status", description = "Create a new status with content, keywords, and images")
-    @PostMapping
-    public ResponseEntity<Status> create(@RequestBody Status status) {
-        return new ResponseEntity<>(statusService.create(status), HttpStatus.CREATED);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Status> create(
+            @RequestPart("payload") StatusCreateRequest payload,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+        Status saved = statusService.create(payload, images);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
-    @Operation(summary = "Update status", description = "Update an existing status by ID")
-    @PutMapping("/{id}")
-    public ResponseEntity<Status> update(@PathVariable Long id, @RequestBody Status status) {
-        return ResponseEntity.ok(statusService.update(id, status));
+    @Operation(summary = "Update status", description = "Update an existing status by ID (same payload/images as create)")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Status> update(
+            @PathVariable Long id,
+            @RequestPart("payload") StatusCreateRequest payload,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestParam(name = "merge", defaultValue = "false") boolean merge,
+            @RequestParam(name = "clearImages", defaultValue = "false") boolean clearImages
+    ) {
+        Status saved = statusService.update(id, payload, images, merge, clearImages);
+        return ResponseEntity.ok(saved);
     }
 
     @Operation(summary = "Delete status", description = "Delete a status by ID")
