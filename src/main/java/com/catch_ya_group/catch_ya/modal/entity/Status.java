@@ -2,6 +2,9 @@ package com.catch_ya_group.catch_ya.modal.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -15,6 +18,7 @@ public class Status {
     private Long userId;
 
     private String content;
+    private LocalDateTime statusDateTime;
 
     // Store keywords as JSON string
     @ElementCollection

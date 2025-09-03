@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -47,6 +47,7 @@ public class StatusService {
                 .content(payload.getContent())
                 .hashKeywords(payload.getHashKeywords() == null ? List.of() : payload.getHashKeywords())
                 .images(new java.util.ArrayList<>())
+                .statusDateTime(LocalDateTime.now())
                 .build();
 
         if (imageFiles != null) {
