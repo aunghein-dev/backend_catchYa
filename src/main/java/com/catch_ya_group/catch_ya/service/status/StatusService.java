@@ -1,5 +1,6 @@
 package com.catch_ya_group.catch_ya.service.status;
 
+import com.catch_ya_group.catch_ya.modal.dto.ProfilePhotoReponse;
 import com.catch_ya_group.catch_ya.modal.dto.StatusCreateRequest;
 import com.catch_ya_group.catch_ya.modal.entity.Status;
 import com.catch_ya_group.catch_ya.repository.StatusRepository;
@@ -12,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -20,8 +22,10 @@ public class StatusService {
     private final StatusRepository statusRepository;
     private final MinioService minioService;
 
+    private static final Sort NEWEST = Sort.by(Sort.Direction.DESC, "statusDateTime", "statusId");
+
     public List<Status> getAll() {
-        return statusRepository.findAll();
+        return statusRepository.findAll(NEWEST);
     }
 
     public Status getById(Long id) {
@@ -29,15 +33,17 @@ public class StatusService {
     }
 
     public List<Status> getByUserId(Long userId) {
-        return statusRepository.findByUserId(userId);
+        return statusRepository.findByUserIdOrderByStatusDateTimeDescStatusIdDesc(userId);
+        // or pageable:
+        // return statusRepository.findByUserId(userId, PageRequest.of(0, 50, NEWEST)).getContent();
     }
 
     public List<Status> searchByContent(String keyword) {
-        return statusRepository.findByContentContaining(keyword);
+        return statusRepository.findByContentContainingNewest(keyword);
     }
 
     public List<Status> searchByKeyword(String keyword) {
-        return statusRepository.findByKeyword(keyword);
+        return statusRepository.findByKeywordNewest(keyword);
     }
 
     @Transactional
@@ -161,4 +167,7 @@ public class StatusService {
         statusRepository.delete(s);
     }
 
+    public List<ProfilePhotoReponse> getPhotoByUserId(Long userId) {
+       return statusRepository.getPhotoByUserId(userId);
+    }
 }

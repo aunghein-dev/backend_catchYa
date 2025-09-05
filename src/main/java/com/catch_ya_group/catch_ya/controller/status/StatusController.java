@@ -90,4 +90,9 @@ public class StatusController {
         statusService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/profile-images/{userId}")
+    public ResponseEntity<?> getPhotoByUserId(@PathVariable Long userId){
+        return ResponseEntity.ok(statusService.getPhotoByUserId(userId));
+    }
 }
