@@ -33,10 +33,10 @@ public interface StatusRepository extends JpaRepository<Status, Long> {
     List<Status> findByKeywordNewest(String keyword);
 
     @Query(value = """
-            SELECT t.status_id ,s.images , t.status_date_time\s
+            SELECT t.status_id ,s.image_url , t.status_date_time
             FROM status_images s
-            LEFT JOIN status t\s
-            ON t.status_id = s.status_status_id
+            LEFT JOIN status t
+            ON t.status_id = s.status_id
             WHERE t.user_id = :userId
             ORDER BY status_date_time desc;
             """, nativeQuery = true)
