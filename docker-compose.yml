@@ -13,8 +13,6 @@ services:
           memory: 256M
     ports:
       - "127.0.0.1:8585:8080"
-    env_file:
-      - /opt/catch-ya/.env
     networks:
       - catchya-net
 
