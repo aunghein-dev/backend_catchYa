@@ -1,9 +1,9 @@
 package com.catch_ya_group.catch_ya.service.status;
 
-import com.catch_ya_group.catch_ya.modal.dto.ProfilePhotoReponse;
-import com.catch_ya_group.catch_ya.modal.dto.StatusCreateRequest;
+import com.catch_ya_group.catch_ya.modal.dto.*;
 import com.catch_ya_group.catch_ya.modal.entity.Status;
 import com.catch_ya_group.catch_ya.repository.StatusRepository;
+import com.catch_ya_group.catch_ya.repository.UsersRepository;
 import com.catch_ya_group.catch_ya.service.file.MinioService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Sort;
 
 @Service
@@ -21,6 +23,7 @@ public class StatusService {
 
     private final StatusRepository statusRepository;
     private final MinioService minioService;
+    private final UsersRepository usersRepository;
 
     private static final Sort NEWEST = Sort.by(Sort.Direction.DESC, "statusDateTime", "statusId");
 
@@ -40,10 +43,6 @@ public class StatusService {
 
     public List<Status> searchByContent(String keyword) {
         return statusRepository.findByContentContainingNewest(keyword);
-    }
-
-    public List<Status> searchByKeyword(String keyword) {
-        return statusRepository.findByKeywordNewest(keyword);
     }
 
     @Transactional
@@ -170,4 +169,63 @@ public class StatusService {
     public List<ProfilePhotoReponse> getPhotoByUserId(Long userId) {
        return statusRepository.getPhotoByUserId(userId);
     }
+
+    public List<UserWithStatusesResponse> searchByKeyword(String keyword, Double currentUserLat, Double currentUserLong) {
+        List<Status> statuses = statusRepository.findByKeywordNewest(keyword);
+
+        List<Long> userIds = statuses.stream()
+                .map(Status::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<Object[]> userResults = usersRepository.getUserInfoStatusWithLocationBatch(userIds, currentUserLat, currentUserLong);
+        Map<Long, InfoUserStatusWithLocation> userInfoMap = new HashMap<>();
+        for (Object[] result : userResults) {
+            Long userId = ((Number) result[0]).longValue();
+            String phoneNo = (String) result[1];
+            String uniqueName = (String) result[2];
+            String coverImgUrl = (String) result[3];
+            String createdAt = (String) result[4];
+            String fullName = (String) result[5];
+            String proPicsImgUrl = (String) result[6];
+            Double latitude = result[7] != null ? ((Number) result[7]).doubleValue() : null;
+            Double longitude = result[8] != null ? ((Number) result[8]).doubleValue() : null;
+            Double distanceInMiles = result[9] != null ? ((Number) result[9]).doubleValue() : null;
+
+            InfoUserStatusWithLocation userInfo = new InfoUserStatusWithLocation(
+                    userId, phoneNo, uniqueName, coverImgUrl, createdAt, fullName, proPicsImgUrl,
+                    latitude, longitude, distanceInMiles
+            );
+            userInfoMap.put(userId, userInfo);
+        }
+
+        // Group statuses by userId
+        Map<Long, List<Status>> statusesByUser = statuses.stream()
+                .collect(Collectors.groupingBy(Status::getUserId));
+
+        // Create a list of UserWithStatusesResponse
+        List<UserWithStatusesResponse> response = new ArrayList<>();
+        for (Long userId : statusesByUser.keySet()) {
+            InfoUserStatusWithLocation userInfo = userInfoMap.get(userId);
+            if (userInfo == null) {
+                // If we don't have user info, skip or create a default? Maybe skip.
+                continue;
+            }
+            List<StatusResponse> statusResponses = statusesByUser.get(userId).stream()
+                    .sorted(Comparator.comparing(Status::getStatusDateTime).reversed()
+                            .thenComparing(Status::getStatusId).reversed())
+                    .map(status -> new StatusResponse(
+                            status.getStatusId(),
+                            status.getContent(),
+                            status.getStatusDateTime(),
+                            status.getHashKeywords(),
+                            status.getImages()
+                    ))
+                    .collect(Collectors.toList());
+            response.add(new UserWithStatusesResponse(userInfo, statusResponses));
+        }
+
+        return response;
+    }
+
 }

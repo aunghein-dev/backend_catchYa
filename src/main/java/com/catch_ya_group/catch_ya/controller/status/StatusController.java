@@ -1,6 +1,8 @@
 package com.catch_ya_group.catch_ya.controller.status;
 
+import com.catch_ya_group.catch_ya.modal.dto.LatLongRequestWithKeywordSearch;
 import com.catch_ya_group.catch_ya.modal.dto.StatusCreateRequest;
+import com.catch_ya_group.catch_ya.modal.dto.UserWithStatusesResponse;
 import com.catch_ya_group.catch_ya.modal.entity.Status;
 import com.catch_ya_group.catch_ya.service.status.StatusService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -53,9 +55,13 @@ public class StatusController {
     }
 
     @Operation(summary = "Search statuses by keyword", description = "Search for statuses by hashKeywords")
-    @GetMapping("/search/keyword")
-    public ResponseEntity<List<Status>> searchByKeyword(@RequestParam String keyword) {
-        return ResponseEntity.ok(statusService.searchByKeyword(keyword));
+    @PostMapping("/search/keyword")
+    public ResponseEntity<List<UserWithStatusesResponse>> searchByKeyword(@RequestBody LatLongRequestWithKeywordSearch latLongRequestWithKeywordSearch) {
+        return ResponseEntity.ok(statusService.searchByKeyword(
+                latLongRequestWithKeywordSearch.keyword(),
+                latLongRequestWithKeywordSearch.latitude(),
+                latLongRequestWithKeywordSearch.longitude()
+        ));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

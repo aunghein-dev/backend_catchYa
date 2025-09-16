@@ -1,6 +1,7 @@
 package com.catch_ya_group.catch_ya.service.user;
 
 
+import com.catch_ya_group.catch_ya.modal.dto.InfoUserStatus;
 import com.catch_ya_group.catch_ya.modal.dto.ProfileUpdaterRequest;
 import com.catch_ya_group.catch_ya.modal.dto.UserLoginDTO;
 import com.catch_ya_group.catch_ya.modal.entity.Leaderboard;
@@ -77,6 +78,7 @@ public class UserService {
     public Long findUserIdByPhoneNo(String phoneNo) {
         return usersRepository.findUserIdByPhoneNo(phoneNo);
     }
+
 
     public boolean checkPasswordCorrect(Long userId, String oldPassword) {
         Users user = usersRepository.findById(userId).orElseThrow();
